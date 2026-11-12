@@ -1,16 +1,36 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex" />
-  <title>DIY365 Admin — Decap CMS</title>
+  <title>DIY365 后台 — Decap CMS</title>
 </head>
 <body>
   <!-- Decap CMS auto-loads ./config.yml from this same /anan/ folder -->
   <!-- CMS_MANUAL_INIT lets us register the Superbed media library before CMS.init() -->
   <script>window.CMS_MANUAL_INIT = true;</script>
   <script src="https://unpkg.com/decap-cms@^3.3.3/dist/decap-cms.js"></script>
+
+  <!-- 简体中文界面：config.yml 的 locale: zh_Hans 会读取这里注册的翻译 -->
+  <script src="./locale-zh.js"></script>
+  <script>
+    (function () {
+      var zh = window.DIY365_ZH_HANS;
+      if (!window.CMS || !zh) return;
+      // 以内置英文为底，中文覆盖：避免语言包缺 key 时界面出现空白。
+      var en = (typeof CMS.getLocale === 'function' && CMS.getLocale('en')) || {};
+      var phrases = Object.assign({}, en, zh);
+      // 多注册几个别名 + 兜底覆盖 'en'：无论 Decap 最终选哪个 locale，界面都是中文。
+      ['zh_Hans', 'zh', 'zh-CN', 'zh_CN', 'en'].forEach(function (key) {
+        CMS.registerLocale(key, phrases);
+      });
+    })();
+  </script>
+
+  <!-- 发布完成后提醒「请用WorkBuddy推送上线」 -->
+  <script src="./deploy-notice.js"></script>
+
   <script src="./superbed-uploader.js"></script>
 </body>
 </html>

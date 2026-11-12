@@ -1,0 +1,144 @@
+/* ============================================================
+   Share dialog + floating action buttons (share / back to top)
+   ============================================================ */
+
+/* ---------- Floating buttons ---------- */
+.float-actions {
+  position: fixed; right: 18px; bottom: 18px; z-index: 60;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.float-btn {
+  width: 48px; height: 48px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border); cursor: pointer;
+  box-shadow: 0 4px 14px rgba(45, 42, 46, 0.16);
+  transition: transform .18s ease, opacity .18s ease, box-shadow .18s ease;
+  padding: 0;
+}
+.float-btn svg { width: 21px; height: 21px; display: block; }
+.float-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(45, 42, 46, 0.2); }
+.float-btn:focus-visible, .share-close:focus-visible, .share-copy-btn:focus-visible,
+.share-channel:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.float-share { background: var(--primary); color: #fff; border-color: var(--primary); }
+.float-share:hover { background: var(--primary-dark); }
+.float-top { background: #111; color: #fff; border-color: #111; opacity: 0; visibility: hidden; transform: translateY(10px); }
+.float-top:hover { background: #000; }
+.float-top svg { width: 23px; height: 23px; }
+.float-top.is-visible { opacity: 1; visibility: visible; transform: translateY(0); }
+
+/* ---------- Overlay / modal ---------- */
+.share-overlay[hidden] { display: none; }
+.share-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(45, 42, 46, 0.45);
+  backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+  animation: shareFade .18s ease both;
+}
+.share-modal {
+  width: min(420px, 100%);
+  background: #fffdfb;
+  border: 1px solid #f0e3e0;
+  border-radius: 20px;
+  padding: 20px 20px 22px;
+  box-shadow: 0 18px 50px rgba(45, 42, 46, 0.22);
+  animation: sharePop .2s ease both;
+}
+@keyframes shareFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sharePop { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
+
+.share-modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.share-modal-head h2 { margin: 0; font-size: 1.35rem; font-weight: 800; color: var(--text); letter-spacing: -.3px; }
+.share-close {
+  width: 32px; height: 32px; border: 0; background: transparent; cursor: pointer;
+  color: #9a7d6b; border-radius: 8px; padding: 4px;
+  display: flex; align-items: center; justify-content: center;
+}
+.share-close:hover { background: #f7ede6; color: var(--text); }
+.share-close svg { width: 20px; height: 20px; }
+
+/* Preview card */
+.share-preview {
+  display: flex; align-items: center; gap: 12px;
+  background: #fdf6ee; border: 1px solid #f3e5d6; border-radius: 14px;
+  padding: 11px 13px;
+}
+.share-preview-img {
+  width: 56px; height: 56px; flex: 0 0 56px;
+  object-fit: cover; border-radius: 9px; background: #f6ece9;
+}
+.share-preview-text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.share-preview-text strong {
+  font-size: 0.95rem; font-weight: 700; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.share-preview-text span {
+  font-size: 0.82rem; color: #b2845b;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* Channels */
+.share-channels {
+  display: flex; justify-content: space-between; gap: 6px;
+  margin: 22px 0 20px;
+}
+.share-channel {
+  flex: 1 1 0; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  color: #8a7460; text-decoration: none;
+}
+.share-channel:hover { text-decoration: none; }
+.share-channel:hover .share-bubble { transform: translateY(-3px); }
+.share-bubble {
+  width: 52px; height: 52px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; transition: transform .18s ease;
+}
+.share-bubble svg { width: 24px; height: 24px; display: block; }
+.sb-fb  { background: #1877f2; }
+.sb-x   { background: #0b0b0b; }
+.sb-pin { background: #e60023; }
+.sb-tg  { background: #2aabee; }
+.sb-mail{ background: #6b7280; }
+.share-channel-label { font-size: 0.73rem; font-weight: 600; color: #9a7d6b; }
+
+/* Copy row */
+.share-copy-row {
+  display: flex; align-items: center; gap: 10px;
+  background: #faf5ef; border: 1px solid #f3e5d6; border-radius: 14px;
+  padding: 8px 8px 8px 14px;
+}
+.share-link-icon { width: 19px; height: 19px; flex: 0 0 19px; color: #b2845b; }
+.share-copy-url {
+  flex: 1 1 auto; min-width: 0; font-size: 0.88rem; color: #6d5a49;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  user-select: all;
+}
+.share-copy-btn {
+  flex: 0 0 auto; border: 0; border-radius: 10px; cursor: pointer;
+  background: #f59e0b; color: #fff; font-weight: 800; font-size: 0.9rem;
+  padding: 9px 17px; transition: background .18s ease;
+}
+.share-copy-btn:hover { background: #e08b06; }
+.share-copy-btn.is-copied { background: #5aa56f; }
+
+/* In-post share button sits next to the Pinterest button */
+.pin-share { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; align-items: center; }
+.pin-share .btn { margin-top: 0; }
+.btn-share { background: #f59e0b; }
+.btn-share:hover { background: #e08b06; }
+
+@media (max-width: 480px) {
+  .share-modal { padding: 18px 16px 20px; border-radius: 18px; }
+  .share-bubble { width: 44px; height: 44px; }
+  .share-bubble svg { width: 21px; height: 21px; }
+  .share-channel-label { font-size: 0.68rem; }
+  .float-actions { right: 12px; bottom: 12px; }
+  .float-btn { width: 44px; height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .share-overlay, .share-modal { animation: none; }
+  .float-btn, .share-bubble { transition: none; }
+  html { scroll-behavior: auto; }
+}

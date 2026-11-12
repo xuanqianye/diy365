@@ -3,6 +3,7 @@
     <a class="brand" href="{{ "/" | relURL }}">{{ .Site.Params.brand }}</a>
     <button class="nav-toggle" aria-label="menu" onclick="document.getElementById('nav').classList.toggle('open')">☰</button>
     <nav class="main-nav" id="nav">
+      <a href="{{ "/" | relURL }}">Home</a>
       <a href="{{ "/patterns/" | relURL }}">Patterns</a>
       <a href="{{ "/categories/" | relURL }}">Categories</a>
       <a href="{{ "/tags/" | relURL }}">Tags</a>

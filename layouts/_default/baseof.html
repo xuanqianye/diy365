@@ -9,5 +9,7 @@
     {{ block "main" . }}{{ end }}
   </main>
   {{ partial "footer.html" . }}
+  {{ partial "share.html" . }}
+  <script defer src="{{ "js/share.js" | relURL }}"></script>
 </body>
 </html>

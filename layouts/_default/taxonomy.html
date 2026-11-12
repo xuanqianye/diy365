@@ -1,8 +1,18 @@
 {{ define "main" }}
-<header class="hero"><h1>{{ .Title }}</h1></header>
+<header class="hero"><h1>{{ .Title }}</h1>{{ if eq .Kind "term" }}<p>{{ .Data.Singular | title }}</p>{{ end }}</header>
+{{ if eq .Kind "term" }}
+{{ partial "adsense.html" (dict "slot" .Site.Params.adsenseSlotList "inline" false) }}
+<div class="masonry">
+  {{ range .Paginator.Pages }}
+    {{ partial "pattern-card.html" . }}
+  {{ end }}
+</div>
+{{ template "_internal/pagination.html" . }}
+{{ else }}
 <div class="taxonomy-cloud">
   {{ range .Data.Terms.Alphabetical }}
     <a href="{{ .Page.RelPermalink }}">{{ .Page.Title }} <small>({{ .Count }})</small></a>
   {{ end }}
 </div>
+{{ end }}
 {{ end }}

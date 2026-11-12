@@ -2,6 +2,9 @@
 # Docs: https://decapcms.org/docs/
 # IMPORTANT: change `repo` below and create a GitHub OAuth App (see README).
 
+# 后台界面语言：zh_Hans（简体中文）。语言包见 ./locale-zh.js，注册在 index.html。
+locale: zh_Hans
+
 # Custom media library: upload images DIRECTLY to Superbed from the browser.
 # Superbed blocks datacenter IPs / non-browser requests, so a server proxy won't work;
 # the editor's own browser uploads instead. The token (apiKey) is necessarily public here
@@ -28,62 +31,71 @@ public_folder: "/uploads"
 
 collections:
   - name: "patterns"
-    label: "Crochet Patterns"
+    label: "钩针图解"
+    label_singular: "篇图解"
     folder: "content/patterns"
     create: true
     slug: "{{slug}}"
     fields:
-      - { name: title, label: Title, widget: string, required: false }
-      - { name: description, label: Description, widget: string, required: false }
-      - { name: draft, label: "Draft (unpublished)", widget: boolean, default: false, required: false }
+      - { name: title, label: 标题, widget: string, required: false }
+      - { name: description, label: 描述, widget: string, required: false }
+      - { name: draft, label: "草稿（不发布）", widget: boolean, default: false, required: false }
       - name: categories
-        label: Category
+        label: 分类
         widget: list
         required: false
-        field: { name: category, label: Category, widget: string, required: false }
+        field: { name: category, label: 分类, widget: string, required: false }
       - name: tags
-        label: Tags
+        label: 标签
         widget: list
         required: false
-        field: { name: tag, label: Tag, widget: string, required: false }
-      - { name: difficulty, label: Difficulty, widget: select, options: [Easy, Intermediate, Advanced], default: Easy, required: false }
-      - { name: yarn, label: Yarn, widget: string, required: false }
-      - { name: hook, label: Hook, widget: string, required: false }
-      - { name: size, label: Size, widget: string, required: false }
-      - { name: pdf, label: "PDF URL (superbed)", widget: file, required: false }
-      - { name: cover, label: "Cover Image URL (superbed)", widget: image, required: false }
-      - { name: pinImage, label: "Pinterest Vertical Image URL (superbed)", widget: image, required: false }
-      - { name: author, label: Author, widget: string, default: "DIY365", required: false }
-      - { name: submittedBy, label: Submitted By, widget: string, required: false }
-      - { name: body, label: "Pattern Steps (Markdown)", widget: markdown, required: false }
+        field: { name: tag, label: 标签, widget: string, required: false }
+      - name: difficulty
+        label: 难度
+        widget: select
+        required: false
+        default: Easy
+        options:
+          - { label: 简单, value: Easy }
+          - { label: 中级, value: Intermediate }
+          - { label: 高级, value: Advanced }
+      - { name: yarn, label: 线材, widget: string, required: false }
+      - { name: hook, label: 钩针型号, widget: string, required: false }
+      - { name: size, label: 成品尺寸, widget: string, required: false }
+      - { name: pdf, label: "图解 PDF（图床）", widget: file, required: false }
+      - { name: cover, label: "封面图（图床）", widget: image, required: false }
+      - { name: pinImage, label: "Pinterest 竖版图（图床，可多张）", widget: image, required: false }
+      - { name: author, label: 作者, widget: string, default: "DIY365", required: false }
+      - { name: submittedBy, label: 投稿人, widget: string, required: false }
+      - { name: body, label: "图解步骤（Markdown）", widget: markdown, required: false }
 
   - name: "pages"
-    label: "Legal & Info Pages"
+    label: "法律与信息页"
     files:
-      - { name: about, label: "About Us", file: "content/pages/about.md",
-          fields: [ {name: title, widget: string}, {name: description, widget: string},
-                    {name: pagetype, widget: hidden, default: legal}, {name: body, widget: markdown} ] }
-      - { name: privacy, label: "Privacy Policy", file: "content/pages/privacy.md",
-          fields: [ {name: title, widget: string}, {name: description, widget: string},
-                    {name: pagetype, widget: hidden, default: legal}, {name: body, widget: markdown} ] }
-      - { name: terms, label: "Terms of Service", file: "content/pages/terms.md",
-          fields: [ {name: title, widget: string}, {name: description, widget: string},
-                    {name: pagetype, widget: hidden, default: legal}, {name: body, widget: markdown} ] }
-      - { name: copyright-policy, label: "Copyright Policy", file: "content/pages/copyright-policy.md",
-          fields: [ {name: title, widget: string}, {name: description, widget: string},
-                    {name: pagetype, widget: hidden, default: legal}, {name: body, widget: markdown} ] }
-      - { name: disclaimer, label: "Disclaimer", file: "content/pages/disclaimer.md",
-          fields: [ {name: title, widget: string}, {name: description, widget: string},
-                    {name: pagetype, widget: hidden, default: legal}, {name: body, widget: markdown} ] }
-      - { name: user-agreement, label: "User Agreement", file: "content/pages/user-agreement.md",
-          fields: [ {name: title, widget: string}, {name: description, widget: string},
-                    {name: pagetype, widget: hidden, default: legal}, {name: body, widget: markdown} ] }
-      - { name: contact, label: "Contact (form page)", file: "content/pages/contact.md",
-          fields: [ {name: title, widget: string}, {name: description, widget: string},
-                    {name: pagetype, widget: hidden, default: form}, {name: body, widget: markdown} ] }
-      - { name: copyright-removal, label: "Copyright Removal (form page)", file: "content/pages/copyright-removal.md",
-          fields: [ {name: title, widget: string}, {name: description, widget: string},
-                    {name: pagetype, widget: hidden, default: form}, {name: body, widget: markdown} ] }
-      - { name: submit, label: "Submit (form page)", file: "content/pages/submit.md",
-          fields: [ {name: title, widget: string}, {name: description, widget: string},
-                    {name: pagetype, widget: hidden, default: form}, {name: body, widget: markdown} ] }
+      - { name: about, label: "关于我们", file: "content/pages/about.md",
+          fields: [ {name: title, label: 标题, widget: string}, {name: description, label: 描述, widget: string},
+                    {name: pagetype, widget: hidden, default: legal}, {name: body, label: 正文, widget: markdown} ] }
+      - { name: privacy, label: "隐私政策", file: "content/pages/privacy.md",
+          fields: [ {name: title, label: 标题, widget: string}, {name: description, label: 描述, widget: string},
+                    {name: pagetype, widget: hidden, default: legal}, {name: body, label: 正文, widget: markdown} ] }
+      - { name: terms, label: "服务条款", file: "content/pages/terms.md",
+          fields: [ {name: title, label: 标题, widget: string}, {name: description, label: 描述, widget: string},
+                    {name: pagetype, widget: hidden, default: legal}, {name: body, label: 正文, widget: markdown} ] }
+      - { name: copyright-policy, label: "版权政策", file: "content/pages/copyright-policy.md",
+          fields: [ {name: title, label: 标题, widget: string}, {name: description, label: 描述, widget: string},
+                    {name: pagetype, widget: hidden, default: legal}, {name: body, label: 正文, widget: markdown} ] }
+      - { name: disclaimer, label: "免责声明", file: "content/pages/disclaimer.md",
+          fields: [ {name: title, label: 标题, widget: string}, {name: description, label: 描述, widget: string},
+                    {name: pagetype, widget: hidden, default: legal}, {name: body, label: 正文, widget: markdown} ] }
+      - { name: user-agreement, label: "用户协议", file: "content/pages/user-agreement.md",
+          fields: [ {name: title, label: 标题, widget: string}, {name: description, label: 描述, widget: string},
+                    {name: pagetype, widget: hidden, default: legal}, {name: body, label: 正文, widget: markdown} ] }
+      - { name: contact, label: "联系我们（表单页）", file: "content/pages/contact.md",
+          fields: [ {name: title, label: 标题, widget: string}, {name: description, label: 描述, widget: string},
+                    {name: pagetype, widget: hidden, default: form}, {name: body, label: 正文, widget: markdown} ] }
+      - { name: copyright-removal, label: "版权删除申请（表单页）", file: "content/pages/copyright-removal.md",
+          fields: [ {name: title, label: 标题, widget: string}, {name: description, label: 描述, widget: string},
+                    {name: pagetype, widget: hidden, default: form}, {name: body, label: 正文, widget: markdown} ] }
+      - { name: submit, label: "投稿（表单页）", file: "content/pages/submit.md",
+          fields: [ {name: title, label: 标题, widget: string}, {name: description, label: 描述, widget: string},
+                    {name: pagetype, widget: hidden, default: form}, {name: body, label: 正文, widget: markdown} ] }
