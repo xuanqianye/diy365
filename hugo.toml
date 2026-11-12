@@ -6,6 +6,13 @@ enableEmoji = true
 paginate = 24
 summaryLength = 28
 
+# Publish content immediately even if its date is in the "future" relative to the
+# CI server's UTC clock (Decap-authored posts use the author's local date, which can
+# read as tomorrow in UTC). Without this, future-dated posts are silently excluded
+# from the build and sitemap.
+[build]
+  buildFuture = true
+
 # Security: do not render raw HTML inside markdown (reduces the XSS surface)
 [markup.goldmark.renderer]
   unsafe = false
