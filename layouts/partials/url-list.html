@@ -1,0 +1,13 @@
+{{- /* Normalize a frontmatter value into a LIST of url strings, accepting
+       either a plain string or a YAML list (Decap multi-upload). Always returns a slice.
+       Usage: {{ $imgs := partial "url-list.html" .Params.pinImage }} */ -}}
+{{- $v := . -}}
+{{- $out := slice -}}
+{{- if reflect.IsSlice $v -}}
+  {{- range $v -}}
+    {{- if . -}}{{- $out = $out | append . -}}{{- end -}}
+  {{- end -}}
+{{- else if $v -}}
+  {{- $out = $out | append $v -}}
+{{- end -}}
+{{- return $out -}}

@@ -1,4 +1,9 @@
 {{ define "main" }}
+{{ $cover := partial "first-url.html" .Params.cover }}
+{{ $pdf := partial "first-url.html" .Params.pdf }}
+{{ $pins := partial "url-list.html" .Params.pinImage }}
+{{ $pinFirst := "" }}{{ with $pins }}{{ $pinFirst = index . 0 }}{{ end }}
+{{ $shareImg := or $pinFirst $cover }}
 <article class="post">
   <h1>{{ .Title }}</h1>
   <div class="post-meta">
@@ -9,13 +14,18 @@
     {{ with .Params.hook }}<span>Hook: {{ . }}</span>{{ end }}
     {{ with .Params.size }}<span>Size: {{ . }}</span>{{ end }}
   </div>
-  {{ with .Params.cover }}<img class="post-cover" src="{{ . }}" alt="{{ .Title }}" loading="lazy">{{ end }}
+  {{ with $cover }}<img class="post-cover" src="{{ . }}" alt="{{ $.Title }}" loading="lazy">{{ end }}
   <div class="post-content">
     {{ .Content }}
   </div>
-  {{ with .Params.pdf }}<p><a class="btn" href="{{ . }}" target="_blank" rel="noopener">Download PDF</a></p>{{ end }}
+  {{ with $pins }}
+  <div class="pattern-gallery">
+    {{ range . }}<img class="pattern-step" src="{{ . }}" alt="{{ $.Title }} pattern step" loading="lazy">{{ end }}
+  </div>
+  {{ end }}
+  {{ with $pdf }}<p><a class="btn" href="{{ . }}" target="_blank" rel="noopener">Download PDF</a></p>{{ end }}
   <div class="pin-share">
-    {{ with .Params.pinImage }}<a class="btn" href="https://pinterest.com/pin/create/button/?url={{ .Permalink | urlquery }}&media={{ . | urlquery }}&description={{ .Title | urlquery }}" target="_blank" rel="noopener">Pin it on Pinterest</a>{{ end }}
+    {{ with $shareImg }}<a class="btn" href="https://pinterest.com/pin/create/button/?url={{ $.Permalink | urlquery }}&media={{ . | urlquery }}&description={{ $.Title | urlquery }}" target="_blank" rel="noopener">Pin it on Pinterest</a>{{ end }}
   </div>
   {{ partial "adsense.html" (dict "slot" .Site.Params.adsenseSlotPost "inline" true) }}
 </article>

@@ -1,0 +1,9 @@
+{{- /* Normalize a frontmatter value that may be a plain string OR a YAML list
+       (Decap stores multi-upload image fields as arrays). Returns ONE url string.
+       Usage: {{ $cover := partial "first-url.html" .Params.cover }} */ -}}
+{{- $v := . -}}
+{{- if reflect.IsSlice $v -}}
+  {{- if gt (len $v) 0 -}}{{- index $v 0 -}}{{- end -}}
+{{- else -}}
+  {{- $v -}}
+{{- end -}}

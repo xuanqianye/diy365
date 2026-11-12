@@ -18,7 +18,8 @@
 <meta property="og:title" content="{{ .Title }}">
 <meta property="og:description" content="{{ with .Description }}{{ . }}{{ else }}{{ .Site.Params.description }}{{ end }}">
 <meta property="og:url" content="{{ .Permalink }}">
-{{ with .Params.pinImage }}<meta property="og:image" content="{{ . }}">{{ else }}{{ with .Params.cover }}<meta property="og:image" content="{{ . }}">{{ end }}{{ end }}
+{{ $ogImg := partial "first-url.html" (or .Params.pinImage .Params.cover) }}
+{{ with $ogImg }}<meta property="og:image" content="{{ . }}">{{ end }}
 <meta name="twitter:card" content="summary_large_image">
 
 <!-- AdSense: 仅在填入真实 Publisher ID 后注入（避免占位符报错） -->

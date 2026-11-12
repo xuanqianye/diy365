@@ -5,7 +5,7 @@
   "@type": "Article",
   "headline": "{{ .Title }}",
   "description": "{{ with .Description }}{{ . }}{{ else }}{{ .Site.Params.description }}{{ end }}",
-  "image": "{{ with .Params.pinImage }}{{ . }}{{ else }}{{ with .Params.cover }}{{ . }}{{ end }}{{ end }}",
+  "image": "{{ partial "first-url.html" (or .Params.pinImage .Params.cover) }}",
   "datePublished": "{{ .Date }}",
   "author": { "@type": "Organization", "name": "{{ .Site.Params.brand }}" }
 }
