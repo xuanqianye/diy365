@@ -111,6 +111,9 @@
   function render() {
     if (!currentItems.length) { body().innerHTML = '<p style="color:#8a8288">暂无投稿。</p>'; return; }
     body().innerHTML = currentItems.map(function (it, i) {
+      var edited;
+      try { edited = draftToPublish(it.md || ''); }
+      catch (e) { edited = String(it.md == null ? '' : it.md); }
       return '<div style="border:1px solid #eee;border-radius:10px;padding:12px 14px;margin-bottom:12px">' +
         '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
         '<strong>' + esc(it.title || '(无标题)') + '</strong>' +
@@ -118,54 +121,83 @@
         esc(it.createdAt || '') + ' · ' + esc(it.type || '') + ' · ' +
         esc(it.name || '') + ' · ' + esc(it.email || '') + '</span>' +
         '<span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">' +
-        '<button data-pub="' + i + '" type="button" style="' + BTN_PUB + '">直接发布</button>' +
-        '<button data-edit="' + i + '" type="button" style="' + BTN + '">编辑后发布</button>' +
-        '<button data-copy="' + i + '" type="button" style="' + BTN + '">复制 Markdown</button>' +
-        '<button data-del="' + i + '" type="button" style="' + BTN_DANGER + '">删除</button>' +
+        '<button data-act="pub" data-i="' + i + '" type="button" style="' + BTN_PUB + '">直接发布</button>' +
+        '<button data-act="edit" data-i="' + i + '" type="button" style="' + BTN + '">编辑后发布</button>' +
+        '<button data-act="copy" data-i="' + i + '" type="button" style="' + BTN + '">复制 Markdown</button>' +
+        '<button data-act="del" data-i="' + i + '" type="button" style="' + BTN_DANGER + '">删除</button>' +
         '</span></div>' +
         '<details style="margin-top:8px"><summary style="cursor:pointer;color:#8a8288;font-size:12px">查看 Markdown</summary>' +
         '<pre style="white-space:pre-wrap;word-break:break-word;background:#faf5ef;padding:12px;' +
         'border-radius:10px;font:12px/1.5 monospace">' + esc(it.md || '') + '</pre></details>' +
-        '<div id="wbRvEdit-' + i + '" style="display:none;margin-top:10px">' +
+        '<div id="wbRvEdit-' + i + '" style="display:none;margin-top:10px;padding:12px;' +
+        'background:#fffaf7;border:1px solid #f0d9df;border-left:3px solid #d96b86;border-radius:8px">' +
         '<div style="color:#8a8288;font-size:12px;margin-bottom:6px">编辑 Markdown 后再发布（draft 已改为 false；如需分类请在后台文章里重新选择已有分类）</div>' +
         '<textarea id="wbRvEditTa-' + i + '" style="width:100%;height:220px;box-sizing:border-box;' +
-        'padding:10px;border:1px solid #ddd;border-radius:8px;font:12px/1.5 monospace">' +
-        esc(draftToPublish(it.md || '')) + '</textarea>' +
+        'padding:10px;border:1px solid #ddd;border-radius:8px;font:12px/1.5 monospace;background:#fff">' +
+        esc(edited) + '</textarea>' +
         '<div style="margin-top:8px;display:flex;gap:8px;align-items:center">' +
-        '<button data-save="' + i + '" type="button" style="' + BTN_PUB + '">保存并发布</button>' +
-        '<button data-cancel="' + i + '" type="button" style="' + BTN + '">取消</button>' +
+        '<button data-act="save" data-i="' + i + '" type="button" style="' + BTN_PUB + '">保存并发布</button>' +
+        '<button data-act="cancel" data-i="' + i + '" type="button" style="' + BTN + '">取消</button>' +
+        '<span style="color:#8a8288;font-size:12px">编辑框已展开，可直接修改上面的内容</span>' +
         '</div></div></div>';
     }).join('');
 
-    Array.prototype.forEach.call(body().querySelectorAll('[data-copy]'), function (btn) {
-      btn.onclick = function () { copyText(currentItems[Number(btn.dataset.copy)].md || '', btn); };
-    });
-    Array.prototype.forEach.call(body().querySelectorAll('[data-del]'), function (btn) {
-      btn.onclick = function () { remove(Number(btn.dataset.del)); };
-    });
-    Array.prototype.forEach.call(body().querySelectorAll('[data-pub]'), function (btn) {
-      btn.onclick = function () {
-        var i = Number(btn.dataset.pub);
-        publish(i, currentItems[i].md || '', btn);
-      };
-    });
-    Array.prototype.forEach.call(body().querySelectorAll('[data-edit]'), function (btn) {
-      btn.onclick = function () {
-        document.getElementById('wbRvEdit-' + btn.dataset.edit).style.display = 'block';
-      };
-    });
-    Array.prototype.forEach.call(body().querySelectorAll('[data-cancel]'), function (btn) {
-      btn.onclick = function () {
-        document.getElementById('wbRvEdit-' + btn.dataset.cancel).style.display = 'none';
-      };
-    });
-    Array.prototype.forEach.call(body().querySelectorAll('[data-save]'), function (btn) {
-      btn.onclick = function () {
-        var i = Number(btn.dataset.save);
-        var ta = document.getElementById('wbRvEditTa-' + i);
-        publish(i, ta.value, btn);
-      };
-    });
+    /* Decap re-renders its React tree continuously, so per-button onclick handlers
+       can be dropped. Delegate all clicks to the stable container instead. */
+    var host = body();
+    if (host._wbClick) host.removeEventListener('click', host._wbClick);
+    host._wbClick = function (e) {
+      var btn = closestAction(e.target);
+      if (!btn || !host.contains(btn)) return;
+      try {
+        onAction(btn.getAttribute('data-act'), Number(btn.getAttribute('data-i')), btn);
+      } catch (err) {
+        window.alert('操作失败：' + (err && err.message ? err.message : String(err)));
+      }
+    };
+    host.addEventListener('click', host._wbClick);
+  }
+
+  function closestAction(node) {
+    while (node && node.nodeType === 1) {
+      if (node.getAttribute && node.getAttribute('data-act')) return node;
+      if (node === document.body) break;
+      node = node.parentNode;
+    }
+    return null;
+  }
+
+  function onAction(act, i, btn) {
+    var it = currentItems[i];
+    if (!it) { window.alert('这条投稿已不存在，请点右上角「刷新」'); return; }
+    var box, ta;
+    switch (act) {
+      case 'copy': copyText(it.md || '', btn); break;
+      case 'del': remove(i); break;
+      case 'pub': publish(i, it.md || '', btn); break;
+      case 'edit':
+        box = document.getElementById('wbRvEdit-' + i);
+        if (!box) { window.alert('编辑区未找到，请点右上角「刷新」后重试'); return; }
+        var opening = box.style.display === 'none';
+        box.style.display = opening ? 'block' : 'none';
+        btn.textContent = opening ? '收起编辑' : '编辑后发布';
+        if (opening) {
+          ta = document.getElementById('wbRvEditTa-' + i);
+          if (ta) { ta.focus(); try { ta.setSelectionRange(0, 0); } catch (e) {} }
+          if (box.scrollIntoView) box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+        break;
+      case 'cancel':
+        box = document.getElementById('wbRvEdit-' + i);
+        if (box) box.style.display = 'none';
+        var toggle = body().querySelector('[data-act="edit"][data-i="' + i + '"]');
+        if (toggle) toggle.textContent = '编辑后发布';
+        break;
+      case 'save':
+        ta = document.getElementById('wbRvEditTa-' + i);
+        publish(i, ta ? ta.value : (it.md || ''), btn);
+        break;
+    }
   }
 
   function flash(btn, text) {
@@ -226,7 +258,24 @@
     return pat;
   }
   function base64Utf8(s) { return btoa(unescape(encodeURIComponent(s))); }
-  function draftToPublish(md) { return md.replace(/^draft:\s*true\s*$/m, 'draft: false'); }
+  function draftToPublish(md) {
+    return String(md == null ? '' : md).replace(/^draft:\s*true\s*$/m, 'draft: false');
+  }
+  /* Submissions do not always carry a `draft` line. Inject draft:false and a
+     short slug into the front matter regardless, otherwise Hugo falls back to
+     the long title-based filename again. */
+  function withFrontMatter(content, slug) {
+    var s = String(content == null ? '' : content);
+    if (/^slug:\s*\S+/m.test(s)) return s;
+    var m = s.match(/^(---\r?\n)([\s\S]*?)(\r?\n---)/);
+    if (m) {
+      var fm = m[2];
+      if (!/^draft:/m.test(fm)) fm += '\ndraft: false';
+      fm += '\nslug: ' + slug;
+      return m[1] + fm + m[3] + s.slice(m[0].length);
+    }
+    return '---\ndraft: false\nslug: ' + slug + '\n---\n\n' + s;
+  }
   function makeSlug(s) {
     var v = String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '').slice(0, 40);
@@ -239,12 +288,8 @@
     var token = ensureToken();
     if (!token) return;
     var slug = makeSlug(it.title) + '-' + Date.now().toString(36);
-    var content = draftToPublish(md || it.md || '');
+    var content = withFrontMatter(draftToPublish(md == null ? (it.md || '') : md), slug);
     if (!content.trim()) { window.alert('内容为空，无法发布'); return; }
-    // Give every published submission a short permalink, matching the new slug field.
-    if (!/^slug:\s*\S+/m.test(content)) {
-      content = content.replace(/^draft:\s*false\s*$/m, 'draft: false\nslug: ' + slug);
-    }
     var path = 'content/patterns/' + slug + '.md';
     var old = btn ? btn.textContent : '';
     if (btn) { btn.textContent = '发布中…'; btn.disabled = true; }
