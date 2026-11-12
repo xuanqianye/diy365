@@ -17,6 +17,8 @@ backend:
   repo: xuanqianye/diy365      # TODO: replace with your GitHub repo (owner/name)
   branch: main
   client_id: Ov23liLP7IRGMwtDriB4
+  # Self-hosted (Cloudflify) GitHub login proxy: replaces Netlify's dead api.netlify.com/auth.
+  base_url: https://diy365-auth.binean2046.workers.dev
 
 # Images are hosted on superbed (external), so we do not store media in the repo.
 media_folder: "static/uploads"     # unused but kept to satisfy Decap
