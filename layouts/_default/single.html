@@ -8,7 +8,7 @@
   <h1>{{ .Title }}</h1>
   <div class="post-meta">
     {{ with .Params.categories }}<span class="badge">{{ index . 0 }}</span>{{ end }}
-    <span>{{ .Date.Format "Jan 2, 2006" }}</span>
+    {{ if not .Date.IsZero }}<span>{{ .Date.Format "Jan 2, 2006" }}</span>{{ end }}
     {{ with .Params.difficulty }}<span>Difficulty: {{ . }}</span>{{ end }}
     {{ with .Params.yarn }}<span>Yarn: {{ . }}</span>{{ end }}
     {{ with .Params.hook }}<span>Hook: {{ . }}</span>{{ end }}

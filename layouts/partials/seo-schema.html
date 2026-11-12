@@ -9,8 +9,8 @@
   "headline": "{{ $pageTitle }}",
   "description": "{{ $pageDesc }}",
   "image": "{{ partial "first-url.html" (or .Params.pinImage .Params.cover $seo.ogImage) }}",
-  "datePublished": "{{ .Date }}",
-  "author": { "@type": "Organization", "name": "{{ $seo.brand }}" }
+{{ if not .Date.IsZero }}  "datePublished": "{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}",
+{{ end }}  "author": { "@type": "Organization", "name": "{{ $seo.brand }}" }
 }
 </script>
 {{ else }}

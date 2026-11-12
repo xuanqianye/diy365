@@ -39,6 +39,10 @@ collections:
     fields:
       - { name: title, label: 标题, widget: string, required: false }
       - { name: description, label: 描述, widget: string, required: false }
+      # 发布时间：新建文章自动填当天日期（浏览器本地时间 / 北京时间），可手动改成实际发布日期。
+      - { name: date, label: "发布时间", widget: datetime, default: "{{now}}",
+          date_format: "YYYY-MM-DD", time_format: false, picker_utc: false, required: false,
+          hint: "前台文章页、feed 列表和结构化数据都用这个日期；留空则前台不显示日期。新建时自动填入当天。" }
       # 单篇 SEO：留空则回退到标题 / 描述 / 站点默认设置。
       - { name: seoTitle, label: "SEO 标题（留空用文章标题）", widget: string, required: false }
       - { name: seoDescription, label: "SEO 描述（留空用上面的「描述」）", widget: string, required: false }

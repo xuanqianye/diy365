@@ -261,20 +261,24 @@
   function draftToPublish(md) {
     return String(md == null ? '' : md).replace(/^draft:\s*true\s*$/m, 'draft: false');
   }
-  /* Submissions do not always carry a `draft` line. Inject draft:false and a
-     short slug into the front matter regardless, otherwise Hugo falls back to
-     the long title-based filename again. */
+  function todayCN() {
+    // China has no DST; fixed UTC+8 keeps the date correct when the browser
+    // runs in UTC (00:00-08:00 CST would otherwise resolve to yesterday).
+    return new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+  }
+  /* Submissions do not always carry date/draft lines. Always inject them plus
+     a short slug, otherwise Hugo renders "Jan 1, 0001" and a long filename URL. */
   function withFrontMatter(content, slug) {
     var s = String(content == null ? '' : content);
-    if (/^slug:\s*\S+/m.test(s)) return s;
     var m = s.match(/^(---\r?\n)([\s\S]*?)(\r?\n---)/);
     if (m) {
       var fm = m[2];
+      if (!/^date:/m.test(fm)) fm += '\ndate: ' + todayCN();
       if (!/^draft:/m.test(fm)) fm += '\ndraft: false';
-      fm += '\nslug: ' + slug;
+      if (!/^slug:/m.test(fm)) fm += '\nslug: ' + slug;
       return m[1] + fm + m[3] + s.slice(m[0].length);
     }
-    return '---\ndraft: false\nslug: ' + slug + '\n---\n\n' + s;
+    return '---\ndate: ' + todayCN() + '\ndraft: false\nslug: ' + slug + '\n---\n\n' + s;
   }
   function makeSlug(s) {
     var v = String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-')

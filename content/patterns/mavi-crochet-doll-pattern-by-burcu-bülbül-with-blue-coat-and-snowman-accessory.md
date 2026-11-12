@@ -2,6 +2,7 @@
 title: Mavi Crochet Doll Pattern by Burcu Bülbül with Blue Coat and Snowman Accessory
 description: Mavi Crochet Doll Pattern by Burcu Bülbül with Blue Coat and Snowman Accessory
 slug: mavi-crochet-doll
+date: 2026-11-12
 draft: false
 categories:
   - Amigurumi
