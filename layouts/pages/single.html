@@ -1,6 +1,11 @@
 {{ define "main" }}
 {{ if eq .Params.pagetype "form" }}
   <div class="container">{{ .Content }}</div>
+{{ else if eq .Params.pagetype "chart" }}
+  <article class="chart-page">
+    <h1>{{ .Title }}</h1>
+    {{ .Content }}
+  </article>
 {{ else }}
 <article class="legal">
   <h1>{{ .Title }}</h1>

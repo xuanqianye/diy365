@@ -1,0 +1,538 @@
+{
+ "langs": [
+  {
+   "key": "us",
+   "label": "US"
+  },
+  {
+   "key": "uk",
+   "label": "UK"
+  },
+  {
+   "key": "es",
+   "label": "ES"
+  },
+  {
+   "key": "tr",
+   "label": "TR"
+  },
+  {
+   "key": "fr",
+   "label": "FR"
+  },
+  {
+   "key": "it",
+   "label": "IT"
+  },
+  {
+   "key": "de",
+   "label": "DE"
+  },
+  {
+   "key": "pt",
+   "label": "PT"
+  },
+  {
+   "key": "ru",
+   "label": "RU"
+  },
+  {
+   "key": "nl",
+   "label": "NL"
+  }
+ ],
+ "groups": [
+  {
+   "label": "Basic stitches & common terms",
+   "key": "basic",
+   "rows": [
+    {
+     "cn": "CH",
+     "zh": "锁针 / 起针链",
+     "en": "chain",
+     "us": "ch",
+     "uk": "ch",
+     "es": "cad / c",
+     "tr": "zn / ilmek",
+     "fr": "ml / ch",
+     "it": "cat / cat.",
+     "de": "Lm / M",
+     "pt": "corr / ch",
+     "ru": "вп",
+     "nl": "l / ketting",
+     "g": "basic"
+    },
+    {
+     "cn": "SL",
+     "zh": "引拔针",
+     "en": "slip stitch",
+     "us": "sl st",
+     "uk": "sl st / ss",
+     "es": "pe / pd",
+     "tr": "kaydırma",
+     "fr": "mc",
+     "it": "m.bss",
+     "de": "Km",
+     "pt": "pbx / pe",
+     "ru": "сс",
+     "nl": "hv",
+     "g": "basic"
+    },
+    {
+     "cn": "X",
+     "zh": "短针",
+     "en": "single / double crochet",
+     "us": "sc",
+     "uk": "dc",
+     "es": "pb / mp",
+     "tr": "sık iğne (si)",
+     "fr": "ms",
+     "it": "m.bassa",
+     "de": "fM",
+     "pt": "pb / mp",
+     "ru": "сбн",
+     "nl": "v",
+     "g": "basic"
+    },
+    {
+     "cn": "T",
+     "zh": "中长针",
+     "en": "half double / half treble",
+     "us": "hdc",
+     "uk": "htr",
+     "es": "mpa / pma",
+     "tr": "yarım trabzan",
+     "fr": "demi-bride",
+     "it": "m.mezza alta",
+     "de": "hStb",
+     "pt": "mpa / pma",
+     "ru": "пстсн",
+     "nl": "hstk",
+     "g": "basic"
+    },
+    {
+     "cn": "F",
+     "zh": "长针",
+     "en": "double / treble crochet",
+     "us": "dc",
+     "uk": "tr",
+     "es": "pa",
+     "tr": "trabzan (t)",
+     "fr": "bride (B)",
+     "it": "m.alta",
+     "de": "Stb",
+     "pt": "pa / p",
+     "ru": "ссн",
+     "nl": "stk",
+     "g": "basic"
+    },
+    {
+     "cn": "E",
+     "zh": "长长针",
+     "en": "treble / double treble",
+     "us": "tr",
+     "uk": "dtr",
+     "es": "pad",
+     "tr": "ikili trabzan",
+     "fr": "double bride (DB / d-br)",
+     "it": "m.altissima",
+     "de": "DStb",
+     "pt": "pad",
+     "ru": "с2н",
+     "nl": "dstk",
+     "g": "basic"
+    },
+    {
+     "cn": "V",
+     "zh": "加针（一针里钩两针）",
+     "en": "increase",
+     "us": "inc",
+     "uk": "inc",
+     "es": "aum",
+     "tr": "artırma",
+     "fr": "aug",
+     "it": "aum",
+     "de": "Zun",
+     "pt": "aum",
+     "ru": "приб",
+     "nl": "meerderen",
+     "g": "basic"
+    },
+    {
+     "cn": "A",
+     "zh": "减针（两针并一针）",
+     "en": "decrease",
+     "us": "dec / sc2tog",
+     "uk": "dec / dc2tog",
+     "es": "dism",
+     "tr": "azaltma",
+     "fr": "dim",
+     "it": "dim",
+     "de": "Abn",
+     "pt": "dim",
+     "ru": "уб / убав",
+     "nl": "minderen",
+     "g": "basic"
+    },
+    {
+     "cn": "st",
+     "zh": "针目",
+     "en": "stitch(es)",
+     "us": "st / sts",
+     "uk": "st / sts",
+     "es": "p / pts",
+     "tr": "ilmek",
+     "fr": "m / ms",
+     "it": "m / maglie",
+     "de": "M",
+     "pt": "p / pts",
+     "ru": "п / петля",
+     "nl": "st / stk",
+     "g": "basic"
+    },
+    {
+     "cn": "n( )",
+     "zh": "重复",
+     "en": "repeat",
+     "us": "rep",
+     "uk": "rep",
+     "es": "rep",
+     "tr": "tekrar",
+     "fr": "rép",
+     "it": "rip",
+     "de": "wdh",
+     "pt": "rep",
+     "ru": "повтор",
+     "nl": "herh",
+     "g": "basic"
+    },
+    {
+     "cn": "K",
+     "zh": "跳过",
+     "en": "skip",
+     "us": "sk",
+     "uk": "miss",
+     "es": "saltar",
+     "tr": "atla",
+     "fr": "sauter",
+     "it": "saltare",
+     "de": "überspr.",
+     "pt": "saltar",
+     "ru": "пропустить",
+     "nl": "overslaan",
+     "g": "basic"
+    },
+    {
+     "cn": "R",
+     "zh": "圈 / 轮（环形编织）",
+     "en": "round",
+     "us": "rnd",
+     "uk": "rnd",
+     "es": "vta / vuelta",
+     "tr": "tur / sıra",
+     "fr": "tour / rg",
+     "it": "giro",
+     "de": "Rd",
+     "pt": "volta / carr.",
+     "ru": "круг (ряд по кругу)",
+     "nl": "toer / rnd",
+     "g": "basic"
+    },
+    {
+     "cn": "H",
+     "zh": "行（往返编织）",
+     "en": "row",
+     "us": "row",
+     "uk": "row",
+     "es": "hilera / h",
+     "tr": "sıra",
+     "fr": "rang",
+     "it": "riga",
+     "de": "R / Reihe",
+     "pt": "carreira",
+     "ru": "ряд",
+     "nl": "rij / toer",
+     "g": "basic"
+    },
+    {
+     "cn": "",
+     "zh": "正面",
+     "en": "right side",
+     "us": "RS",
+     "uk": "RS",
+     "es": "LD / derecho",
+     "tr": "ön yüz",
+     "fr": "endroit",
+     "it": "dritto",
+     "de": "Vorderseite",
+     "pt": "direito",
+     "ru": "лиц. сторона",
+     "nl": "goede kant",
+     "g": "basic"
+    },
+    {
+     "cn": "",
+     "zh": "反面",
+     "en": "wrong side",
+     "us": "WS",
+     "uk": "WS",
+     "es": "LR / revés",
+     "tr": "arka yüz",
+     "fr": "envers",
+     "it": "rovescio",
+     "de": "Rückseite",
+     "pt": "avesso",
+     "ru": "изн. сторона",
+     "nl": "verkeerde kant",
+     "g": "basic"
+    },
+    {
+     "cn": "",
+     "zh": "线圈 / 针上线圈",
+     "en": "loop",
+     "us": "lp",
+     "uk": "lp",
+     "es": "lazo / heb",
+     "tr": "ilmek / halka",
+     "fr": "boucle",
+     "it": "anello / asola",
+     "de": "Schlinge",
+     "pt": "laçada",
+     "ru": "петля",
+     "nl": "lus",
+     "g": "basic"
+    },
+    {
+     "cn": "",
+     "zh": "空格 / 锁针空隙",
+     "en": "space",
+     "us": "sp",
+     "uk": "sp",
+     "es": "espacio",
+     "tr": "boşluk",
+     "fr": "espace",
+     "it": "spazio",
+     "de": "Zwischenraum",
+     "pt": "espaço",
+     "ru": "арка / промежуток",
+     "nl": "ruimte",
+     "g": "basic"
+    },
+    {
+     "cn": "",
+     "zh": "合并一起钩",
+     "en": "together",
+     "us": "tog",
+     "uk": "tog",
+     "es": "juntos",
+     "tr": "birlikte",
+     "fr": "ensemble",
+     "it": "insieme",
+     "de": "zusammen",
+     "pt": "juntos",
+     "ru": "вместе",
+     "nl": "samen",
+     "g": "basic"
+    },
+    {
+     "cn": "",
+     "zh": "收针 / 断线",
+     "en": "fasten off",
+     "us": "FO",
+     "uk": "FO",
+     "es": "rematar",
+     "tr": "bitir / kapat",
+     "fr": "arrêter",
+     "it": "chiudere",
+     "de": "abketten",
+     "pt": "arrematar",
+     "ru": "закрепить нить",
+     "nl": "afhechten",
+     "g": "basic"
+    },
+    {
+     "cn": "",
+     "zh": "钩针",
+     "en": "hook",
+     "us": "hook",
+     "uk": "hook",
+     "es": "ganchillo",
+     "tr": "tığ",
+     "fr": "aiguille à crochet",
+     "it": "uncinetto",
+     "de": "Häkelnadel",
+     "pt": "agulha de crochê",
+     "ru": "крючок",
+     "nl": "haaknaald",
+     "g": "basic"
+    },
+    {
+     "cn": "",
+     "zh": "毛线 / 线材",
+     "en": "yarn",
+     "us": "yarn",
+     "uk": "yarn",
+     "es": "hilo / lana",
+     "tr": "iplik",
+     "fr": "fil / laine",
+     "it": "filato",
+     "de": "Garn",
+     "pt": "fio / lã",
+     "ru": "пряжа",
+     "nl": "garen",
+     "g": "basic"
+    }
+   ]
+  },
+  {
+   "label": "Advanced & special stitches (Chinese chart symbols)",
+   "key": "advanced",
+   "rows": [
+    {
+     "cn": "R / MR",
+     "zh": "环形起针（魔术环）",
+     "en": "magic ring / circle",
+     "us": "MR",
+     "uk": "MR",
+     "g": "advanced"
+    },
+    {
+     "cn": "E (3 卷)",
+     "zh": "3 卷长针（超长针）",
+     "en": "double / triple treble",
+     "us": "dtr",
+     "uk": "ttr",
+     "g": "advanced"
+    },
+    {
+     "cn": "BLO",
+     "zh": "只挑后半针（内半针）",
+     "en": "back loop only",
+     "us": "BLO",
+     "uk": "BLO",
+     "g": "advanced"
+    },
+    {
+     "cn": "FLO",
+     "zh": "只挑前半针（外半针）",
+     "en": "front loop only",
+     "us": "FLO",
+     "uk": "FLO",
+     "g": "advanced"
+    },
+    {
+     "cn": "W",
+     "zh": "一针里钩 3 短针",
+     "en": "single crochet 3 increase",
+     "us": "sc3inc",
+     "uk": "dc3inc",
+     "g": "advanced"
+    },
+    {
+     "cn": "M",
+     "zh": "3 短针并 1 针",
+     "en": "single crochet 3 together",
+     "us": "sc3tog",
+     "uk": "dc3tog",
+     "g": "advanced"
+    },
+    {
+     "cn": "TV",
+     "zh": "中长针加针",
+     "en": "half double 2 increase",
+     "us": "hdc inc",
+     "uk": "htr inc",
+     "g": "advanced"
+    },
+    {
+     "cn": "TA",
+     "zh": "中长针减针",
+     "en": "half double 2 together",
+     "us": "hdc2tog",
+     "uk": "htr2tog",
+     "g": "advanced"
+    },
+    {
+     "cn": "FV",
+     "zh": "长针加针",
+     "en": "double 2 increase",
+     "us": "dc inc",
+     "uk": "tr inc",
+     "g": "advanced"
+    },
+    {
+     "cn": "FA",
+     "zh": "长针减针",
+     "en": "double 2 together",
+     "us": "dc2tog",
+     "uk": "tr2tog",
+     "g": "advanced"
+    },
+    {
+     "cn": "WF",
+     "zh": "外钩长针（前侧针柱）",
+     "en": "front post double / treble",
+     "us": "FPdc",
+     "uk": "FPtr",
+     "g": "advanced"
+    },
+    {
+     "cn": "NF",
+     "zh": "内钩长针（后侧针柱）",
+     "en": "back post double / treble",
+     "us": "BPdc",
+     "uk": "BPtr",
+     "g": "advanced"
+    },
+    {
+     "cn": "Q",
+     "zh": "枣形针 / 泡泡针",
+     "en": "cluster / bubble stitch",
+     "us": "3dc cluster",
+     "uk": "3tr cluster",
+     "g": "advanced"
+    },
+    {
+     "cn": "G",
+     "zh": "爆米花针",
+     "en": "popcorn stitch",
+     "us": "5dc popcorn",
+     "uk": "5tr popcorn",
+     "g": "advanced"
+    },
+    {
+     "cn": "Y",
+     "zh": "狗牙针",
+     "en": "picot",
+     "us": "picot",
+     "uk": "picot",
+     "g": "advanced"
+    },
+    {
+     "cn": "N",
+     "zh": "反短针 / 蟹针",
+     "en": "reverse single / crab stitch",
+     "us": "RSC",
+     "uk": "CS",
+     "g": "advanced"
+    },
+    {
+     "cn": "yo",
+     "zh": "绕线（挂线）",
+     "en": "yarn over (hook)",
+     "us": "yo",
+     "uk": "yoh",
+     "g": "advanced"
+    },
+    {
+     "cn": "翻转",
+     "zh": "翻面 / 翻转织片",
+     "en": "turn",
+     "us": "turn",
+     "uk": "turn",
+     "g": "advanced"
+    }
+   ]
+  }
+ ]
+}

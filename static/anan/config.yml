@@ -62,9 +62,11 @@ collections:
       - { name: yarn, label: 线材, widget: string, required: false }
       - { name: hook, label: 钩针型号, widget: string, required: false }
       - { name: size, label: 成品尺寸, widget: string, required: false }
-      # 图床只收 jpg/png/webp，不收 PDF → 已移除 PDF 字段；PDF 请先在投稿页/本地转成图片再传。
+      # 图床只收 jpg/png/webp。上传器已内置 PDF 自动分段转图：选 PDF 时逐页渲染、
+      # 长页切成多段、转成图片后逐张上传。独立的 PDF 字段已移除，PDF 请传到下面的
+      # 「图解步骤图」字段，这样每一页都会保留并渲染成组图。
       - { name: cover, label: "封面图（图床，仅 jpg/png/webp）", widget: image, required: false }
-      - { name: pinImage, label: "图解步骤图（图床，可多张，仅 jpg/png/webp）", widget: image, required: false }
+      - { name: pinImage, label: "图解步骤图（可多张；选 PDF 自动裁剪成图片上传）", widget: image, required: false }
       - { name: author, label: 作者, widget: string, default: "DIY365", required: false }
       - { name: submittedBy, label: 投稿人, widget: string, required: false }
       - { name: body, label: "图解步骤（Markdown）", widget: markdown, required: false }

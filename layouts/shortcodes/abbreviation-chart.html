@@ -1,0 +1,89 @@
+{{- $d := hugo.Data.abbreviations -}}
+<style>
+.chart-page { max-width: 1120px; margin: 24px auto; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius); padding: 30px; box-shadow: var(--shadow); }
+.chart-page h1 { font-size: 1.6rem; margin-top: 0; }
+.chart-page p { color: #555; line-height: 1.7; }
+.abbr-tools { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 20px 0 12px; }
+.abbr-search { width: 100%; max-width: 380px; padding: 10px 14px; border: 1px solid var(--border);
+  border-radius: 999px; font: inherit; font-size: 0.9rem; background: #fff; }
+.abbr-search:focus { outline: 2px solid #f3c6d2; border-color: var(--primary); }
+.abbr-count { color: var(--muted); font-size: 0.84rem; }
+.abbr-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; }
+.abbr-table { border-collapse: collapse; width: 100%; min-width: 1180px; font-size: 0.83rem; }
+.abbr-table th, .abbr-table td { padding: 8px 10px; border-bottom: 1px solid var(--border);
+  text-align: left; white-space: nowrap; vertical-align: top; }
+.abbr-table thead th { position: sticky; top: 0; background: #faf5ef; color: var(--primary-dark);
+  font-weight: 700; z-index: 1; }
+.abbr-table .abbr-group th { background: #f7e9ed; color: var(--primary-dark); font-weight: 700; }
+.abbr-table tbody tr:hover { background: #fff9f6; }
+.abbr-sym { display: inline-block; min-width: 24px; text-align: center; padding: 2px 8px;
+  background: #fdeaf0; color: #b84066; border-radius: 999px; font-weight: 700; }
+.abbr-empty { color: #b6acb0; }
+.abbr-note { font-size: 0.84rem; margin-top: 12px; }
+@media (max-width: 720px) { .chart-page { padding: 16px; margin: 14px; } }
+</style>
+
+<div class="abbr-tools">
+  <input class="abbr-search" id="abbrSearch" type="search"
+         placeholder="Search stitches, symbols or abbreviations"
+         aria-label="Search the abbreviation table">
+  <span class="abbr-count" id="abbrCount"></span>
+</div>
+<div class="abbr-scroll">
+  <table class="abbr-table">
+    <thead>
+      <tr>
+        <th>Chinese symbol</th>
+        <th>Chinese name</th>
+        <th>English</th>
+        {{ range $d.langs }}<th>{{ .label }}</th>{{ end }}
+      </tr>
+    </thead>
+    <tbody>
+      {{ range $g := $d.groups }}
+        <tr class="abbr-group" data-group="{{ $g.key }}"><th colspan="13">{{ $g.label }}</th></tr>
+        {{ range $r := $g.rows }}
+          <tr class="abbr-row" data-group="{{ $g.key }}" data-search="{{ printf "%v" $r }}">
+            <td>{{ with $r.cn }}<span class="abbr-sym">{{ . }}</span>{{ else }}<span class="abbr-empty">&mdash;</span>{{ end }}</td>
+            <td>{{ $r.zh }}</td>
+            <td>{{ $r.en }}</td>
+            {{ range $l := $d.langs }}
+              <td>{{ with index $r $l.key }}{{ . }}{{ else }}<span class="abbr-empty">&mdash;</span>{{ end }}</td>
+            {{ end }}
+          </tr>
+        {{ end }}
+      {{ end }}
+    </tbody>
+  </table>
+</div>
+<p class="abbr-note">Scroll sideways on smaller screens to see every language column. An em dash means no standard abbreviation is listed for that language.</p>
+
+<script>
+(function () {
+  var input = document.getElementById('abbrSearch');
+  if (!input) return;
+  var rows = [].slice.call(document.querySelectorAll('.abbr-row'));
+  var groups = [].slice.call(document.querySelectorAll('.abbr-group'));
+  var count = document.getElementById('abbrCount');
+  function apply() {
+    var q = input.value.trim().toLowerCase();
+    var n = 0;
+    rows.forEach(function (tr) {
+      var hit = !q || (tr.getAttribute('data-search') || '').toLowerCase().indexOf(q) >= 0;
+      tr.style.display = hit ? '' : 'none';
+      if (hit) n++;
+    });
+    groups.forEach(function (g) {
+      var key = g.getAttribute('data-group');
+      var any = rows.some(function (tr) {
+        return tr.getAttribute('data-group') === key && tr.style.display !== 'none';
+      });
+      g.style.display = any ? '' : 'none';
+    });
+    if (count) count.textContent = q ? (n + ' matching rows') : (rows.length + ' rows');
+  }
+  input.addEventListener('input', apply);
+  apply();
+})();
+</script>

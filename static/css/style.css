@@ -150,6 +150,7 @@ img { max-width: 100%; height: auto; display: block; }
 .footer-links { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin-bottom: 14px; }
 .footer-links a { color: var(--muted); font-size: 0.86rem; }
 .footer-links a:hover { color: var(--primary); }
+.footer-links a.footer-submit { color: var(--primary); font-weight: 700; }
 .copyright { text-align: center; color: var(--muted); font-size: 0.82rem; }
 
 /* ---------------- Legal pages ---------------- */

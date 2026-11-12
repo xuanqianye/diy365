@@ -1,27 +1,41 @@
-/* Decap CMS custom media library: upload images DIRECTLY to Superbed from the browser.
+/* Decap CMS custom media library: upload DIRECTLY to Superbed from the browser.
  *
  * Why browser-direct (not a server proxy):
  *   Superbed blocks datacenter IPs and non-browser requests (CF Workers and server-side
- *   curl both get connection-reset on /upload). The editor's own browser (normal network)
- *   is allowed, so we upload straight from the client.
+ *   curl both get connection-reset on /upload). The editor's own browser is allowed.
  *
- * Security note:
- *   The token below is read from config.yml (media_library.config.apiKey) and is
- *   necessarily PUBLIC here — Decap CMS runs entirely in the browser. This is the same
- *   key PicGo/ShareX use for Superbed, so it matches intended use. To limit abuse, keep
- *   your Superbed upload quota low and rotate the key if needed.
+ * Auth: Superbed reads the token from the MULTIPART FORM FIELD `token`, NOT the
+ *   X-API-Key header (the header method returns "Missing API key"). Same as PicGo/ShareX.
+ *   The key is necessarily public here (Decap runs entirely in the browser).
  *
- *   AUTH NOTE: Superbed authenticates via the `token` MULTIPART FORM FIELD, NOT the
- *   `X-API-Key` header. The header method returns "Missing API key" (verified), so we
- *   append `token` to the FormData. This matches the official PicGo/ShareX config.
+ * PDF support (Superbed does NOT accept PDF files):
+ *   Selecting a PDF renders each page with pdf.js, splits tall pages into sections,
+ *   converts each section to WebP (JPEG fallback) and uploads every image separately.
+ *   Use the step-by-step images field for PDFs so every page is kept.
+ *   Limits: 30 pages, 40 MB per PDF, 1500 px render width, 6 sections per page.
  *
- * IMPORTANT: Decap 3.x registerMediaLibrary expects the LIBRARY OBJECT as the first arg
- * (not a string name), and init() receives `handleInsert` (not `handleMediaUpload`).
- * Decap also hides the media button unless enableStandalone() returns true.
+ * Decap 3.x notes (verified in the bundle):
+ *   - registerMediaLibrary expects the LIBRARY OBJECT (carrying `name`), not a string.
+ *   - init() receives `handleInsert`; enableStandalone() must return true or the
+ *     media button is hidden.
+ *   - handleInsert must receive ABSOLUTE URL STRING(S), never {id,url} objects
+ *     (objects get public_folder prepended -> "/uploads/https://..." -> broken).
+ *   - allowMultiple defaults to TRUE for media libraries; a single value is passed
+ *     as one string, multiple values as an array of strings.
  */
 (function () {
   var CMS = window.CMS;
   if (!CMS) { console.error('Decap CMS not loaded'); return; }
+
+  var PDF_LIB = '/js/vendor/pdf.min.mjs';
+  var PDF_WORKER = '/js/vendor/pdf.worker.min.mjs';
+
+  var MAX_IMG_BYTES = 15 * 1024 * 1024;
+  var MAX_PDF_BYTES = 40 * 1024 * 1024;
+  var MAX_PDF_PAGES = 30;
+  var MAX_CANVAS_W = 1500;
+  var SLICE_RATIO = 1.7;   // each section height ~ width * 1.7
+  var MAX_SLICES = 6;      // max sections per page
 
   var SuperbedLibrary = {
     name: 'superbed',
@@ -33,17 +47,162 @@
       var endpoint = (options.config && options.config.endpoint) || 'https://api.superbed.cn/upload';
       var apiKey = (options.config && options.config.apiKey) || '';
       var overlay = null;
+      var pdfjs = null;
+
+      function statusEl() {
+        return overlay ? overlay.querySelector('.sb-status') : null;
+      }
+      function setStatus(msg) {
+        var el = statusEl();
+        if (el) el.textContent = msg || '';
+      }
+
+      /* ---------- upload a single image blob/file to Superbed ---------- */
+      function uploadBlob(blob, name) {
+        setStatus('Uploading: ' + name);
+        var fd = new FormData();
+        fd.append('file', blob, name || 'image.webp');
+        if (apiKey) fd.append('token', apiKey);
+        fd.append('categories', 'diy365'); // album on Superbed (auto-created)
+        return fetch(endpoint, { method: 'POST', body: fd })
+          .then(function (r) {
+            return r.text().then(function (txt) {
+              var d = null;
+              try { d = JSON.parse(txt); } catch (e) { d = { _raw: txt }; }
+              return { ok: r.ok, status: r.status, d: d, txt: txt };
+            });
+          })
+          .then(function (res) {
+            var d = res.d || {};
+            var url = d.url || (d.data && d.data.url) || d.src || (d.data && d.data.src);
+            if (!res.ok || !url || (typeof d.err !== 'undefined' && d.err !== 0)) {
+              var msg = d.error || d.msg || d.message ||
+                (typeof d.err !== 'undefined' ? ('err=' + d.err) : '') ||
+                res.txt || ('HTTP ' + (res.status || 'err'));
+              throw new Error(String(msg).slice(0, 160));
+            }
+            return url;
+          });
+      }
+
+      /* ---------- canvas -> WebP (JPEG fallback) ---------- */
+      function canvasToImage(canvas) {
+        return new Promise(function (resolve) {
+          canvas.toBlob(function (b) {
+            if (b && b.type === 'image/webp') { resolve({ blob: b, ext: 'webp' }); return; }
+            canvas.toBlob(function (b2) {
+              resolve({ blob: b2 || b, ext: 'jpg' });
+            }, 'image/jpeg', 0.88);
+          }, 'image/webp', 0.88);
+        });
+      }
+
+      function loadPdfjs() {
+        if (pdfjs) return Promise.resolve(pdfjs);
+        setStatus('Loading PDF converter…');
+        return import(PDF_LIB).then(function (mod) {
+          mod.GlobalWorkerOptions.workerSrc = PDF_WORKER;
+          pdfjs = mod;
+          return mod;
+        });
+      }
+
+      function isImage(f) {
+        return /\.(jpe?g|png|webp)$/i.test(f.name) ||
+          ['image/jpeg', 'image/png', 'image/webp'].indexOf(f.type) >= 0;
+      }
+      function isPdf(f) {
+        return /\.pdf$/i.test(f.name) || f.type === 'application/pdf';
+      }
+
+      /* ---------- PDF: render page by page, split tall pages, upload each section ---------- */
+      function processPdf(file, results) {
+        if (file.size > MAX_PDF_BYTES) {
+          return Promise.reject(new Error('PDF is larger than 40 MB. Please compress it first.'));
+        }
+        return loadPdfjs().then(function (lib) {
+          return file.arrayBuffer().then(function (buf) {
+            return lib.getDocument({ data: buf }).promise;
+          }).then(function (doc) {
+            var pages = Math.min(doc.numPages, MAX_PDF_PAGES);
+            var chain = Promise.resolve();
+
+            for (var p = 1; p <= pages; p++) {
+              (function (pageNo) {
+                chain = chain.then(function () {
+                  setStatus('Converting PDF: page ' + pageNo + ' of ' + doc.numPages);
+                  return doc.getPage(pageNo);
+                }).then(function (page) {
+                  var vp = page.getViewport({ scale: 1.5 });
+                  var scale = Math.min(1, MAX_CANVAS_W / vp.width) * 1.5;
+                  var vp2 = page.getViewport({ scale: scale });
+                  var c = document.createElement('canvas');
+                  c.width = Math.max(1, Math.round(vp2.width));
+                  c.height = Math.max(1, Math.round(vp2.height));
+                  return page.render({ canvasContext: c.getContext('2d'), viewport: vp2 })
+                    .promise.then(function () { return c; });
+                }).then(function (c) {
+                  // Split tall pages so each image stays readable on mobile.
+                  var n = Math.min(Math.ceil(c.height / (c.width * SLICE_RATIO)), MAX_SLICES) || 1;
+                  var base = file.name.replace(/\.pdf$/i, '')
+                    .replace(/[^A-Za-z0-9_-]+/g, '-').slice(0, 40) || 'pattern';
+                  var seq = Promise.resolve();
+                  for (var s = 0; s < n; s++) {
+                    (function (idx, total) {
+                      seq = seq.then(function () {
+                        var y = Math.round(idx * c.height / total);
+                        var h = Math.round((idx + 1) * c.height / total) - y;
+                        var seg = document.createElement('canvas');
+                        seg.width = c.width;
+                        seg.height = Math.max(1, h);
+                        seg.getContext('2d').drawImage(c, 0, y, c.width, h, 0, 0, c.width, h);
+                        return canvasToImage(seg).then(function (img) {
+                          var name = base + '-p' + pageNo +
+                            (total > 1 ? '-s' + (idx + 1) : '') + '.' + img.ext;
+                          return uploadBlob(img.blob, name);
+                        }).then(function (url) { results.push(url); });
+                      });
+                    })(s, n);
+                  }
+                  return seq;
+                });
+              })(p);
+            }
+
+            return chain.then(function () {
+              if (doc.numPages > MAX_PDF_PAGES) {
+                setStatus('PDF has ' + doc.numPages + ' pages; converted the first ' + MAX_PDF_PAGES + '.');
+              }
+            });
+          });
+        });
+      }
+
+      /* ---------- one selected file -> one or more uploaded URLs ---------- */
+      function processFile(file, results) {
+        if (isPdf(file)) return processPdf(file, results);
+        if (isImage(file)) {
+          if (file.size > MAX_IMG_BYTES) {
+            setStatus('Image exceeds 15 MB, skipped: ' + file.name);
+            return Promise.resolve();
+          }
+          return uploadBlob(file, file.name).then(function (url) { results.push(url); });
+        }
+        setStatus('Unsupported file type: ' + file.name + ' (JPG / PNG / WebP, or PDF)');
+        return Promise.resolve();
+      }
 
       function open(close, allowMultiple) {
         overlay = document.createElement('div');
         overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2147483000;display:flex;align-items:center;justify-content:center;';
         var box = document.createElement('div');
-        box.style.cssText = 'background:#fff;border-radius:10px;padding:22px;width:440px;max-width:92vw;font-family:system-ui,sans-serif;box-shadow:0 10px 40px rgba(0,0,0,.3);';
+        box.style.cssText = 'background:#fff;border-radius:10px;padding:22px;width:460px;max-width:92vw;font-family:system-ui,sans-serif;box-shadow:0 10px 40px rgba(0,0,0,.3);';
         box.innerHTML =
           '<h3 style="margin:0 0 6px;font-size:18px;">Upload to Superbed</h3>' +
-          '<p style="margin:0 0 14px;color:#666;font-size:13px;">Images are stored on the Superbed CDN; the returned URL is inserted into your field.</p>' +
-          '<input type="file" accept="image/*,.pdf" style="display:block;width:100%;margin-bottom:12px;">' +
-          '<div class="sb-status" style="margin-bottom:14px;color:#555;font-size:13px;min-height:18px;"></div>' +
+          '<p style="margin:0 0 8px;color:#555;font-size:13px;line-height:1.5;">JPG / PNG / WebP only on the image host. Selecting a <b>PDF</b> automatically splits every page into images before uploading (long pages are cut into sections).</p>' +
+          '<p style="margin:0 0 12px;color:#8a6a00;font-size:12px;line-height:1.5;">Tip: choose PDFs on the step-by-step images field so every page is kept. Using the cover field keeps only the first image.</p>' +
+          '<input type="file" accept="image/*,.pdf,application/pdf" style="display:block;width:100%;margin-bottom:10px;">' +
+          '<div class="sb-status" style="margin-bottom:14px;color:#555;font-size:13px;min-height:18px;line-height:1.4;"></div>' +
           '<div style="display:flex;gap:10px;justify-content:flex-end;">' +
             '<button class="sb-cancel" style="padding:9px 16px;cursor:pointer;border:1px solid #ccc;background:#fff;border-radius:6px;">Cancel</button>' +
             '<button class="sb-upload" style="padding:9px 16px;cursor:pointer;border:none;background:#2f80ed;color:#fff;border-radius:6px;">Upload</button>' +
@@ -52,10 +211,8 @@
         document.body.appendChild(overlay);
 
         var input = box.querySelector('input[type=file]');
-        // A single-value image/file field must receive ONE url string; only list-like
-        // fields (allowMultiple) may receive an array. Match the picker accordingly.
+        // allowMultiple defaults to true in Decap; a single value must be ONE string.
         input.multiple = !!allowMultiple;
-        var status = box.querySelector('.sb-status');
         var uploadBtn = box.querySelector('.sb-upload');
         var cancelBtn = box.querySelector('.sb-cancel');
 
@@ -65,61 +222,38 @@
           if (typeof close === 'function') { try { close(); } catch (e) { console.error(e); } }
         }
         cancelBtn.addEventListener('click', closeModal);
+        overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
 
         uploadBtn.addEventListener('click', function () {
           var files = input.files;
-          if (!files || !files.length) { status.textContent = 'Please choose an image first.'; return; }
+          if (!files || !files.length) { setStatus('Please choose an image or a PDF first.'); return; }
           uploadBtn.disabled = true;
           var results = [];
-          var i = 0;
-          function next() {
-            if (i >= files.length) {
-              status.textContent = 'Done — inserting ' + results.length + ' image(s).';
-              // CRITICAL (verified in decap-cms bundle):
-              //  - handleInsert expects ABSOLUTE URL STRING(S), not {id,url} objects.
-              //    The media-path normalizer a_() returns absolute URLs as-is (xh() regex
-              //    /^(?:[a-z]+:)?\/\/|^\//), but for objects it extracts a path and
-              //    PREPENDS public_folder -> "/uploads/https://..." -> broken preview.
-              //  - The xy reducer stores mediaPath verbatim for single-value fields, so
-              //    a single-value image/file field needs ONE STRING, not an array.
-              //    Only allowMultiple fields take an array (official Uploadcare behavior).
-              var urls = results.map(function (r) { return r.url; });
-              try { if (typeof handleInsert === 'function') handleInsert(allowMultiple ? urls : urls[0]); } catch (e) { console.error(e); }
-              setTimeout(closeModal, 500);
+          var chain = Promise.resolve();
+
+          Array.prototype.forEach.call(files, function (f) {
+            chain = chain.then(function () { return processFile(f, results); })
+              .catch(function (e) {
+                setStatus('Could not process ' + f.name + ' — ' + e.message);
+              });
+          });
+
+          chain.then(function () {
+            if (!results.length) {
+              setStatus('Nothing was uploaded. Please try again.');
+              uploadBtn.disabled = false;
               return;
             }
-            var file = files[i];
-            status.textContent = 'Uploading ' + (i + 1) + '/' + files.length + ': ' + file.name;
-            var fd = new FormData();
-            fd.append('file', file, file.name || ('file' + i));
-            // Superbed auth = `token` MULTIPART FORM FIELD (NOT X-API-Key header — that
-            // returns "Missing API key"). Same as the official PicGo/ShareX config.
-            if (apiKey) fd.append('token', apiKey);
-            fd.append('categories', 'diy365'); // album on superbed (auto-created)
-            fetch(endpoint, { method: 'POST', body: fd })
-              .then(function (r) {
-                return r.text().then(function (txt) {
-                  var d = null;
-                  try { d = JSON.parse(txt); } catch (e) { d = { _raw: txt }; }
-                  return { ok: r.ok, status: r.status, d: d, txt: txt };
-                });
-              })
-              .then(function (res) {
-                var d = res.d || {};
-                var url = d.url || (d.data && d.data.url) || d.src || (d.data && d.data.src);
-                if (!res.ok || !url || (typeof d.err !== 'undefined' && d.err !== 0)) {
-                  var msg = d.error || d.msg || d.message || (typeof d.err !== 'undefined' ? ('err=' + d.err) : '') || res.txt || ('HTTP ' + (res.status || 'err'));
-                  throw new Error(msg);
-                }
-                results.push({ id: url, name: file.name, url: url });
-                i++; next();
-              })
-              .catch(function (e) {
-                status.textContent = 'Upload failed: ' + e.message + '. If blocked, try with your VPN on.';
-                uploadBtn.disabled = false;
-              });
-          }
-          next();
+            var urls = results.slice();
+            // A PDF produces several images: always insert them as an array so no
+            // page is lost, even if Decap reports allowMultiple=false for this field.
+            var multi = allowMultiple || urls.length > 1;
+            setStatus('Done — ' + urls.length + ' image(s) uploaded. Inserting…');
+            try {
+              if (typeof handleInsert === 'function') handleInsert(multi ? urls : urls[0]);
+            } catch (e) { console.error(e); }
+            setTimeout(closeModal, 700);
+          });
         });
       }
 
@@ -140,7 +274,6 @@
     }
   };
 
-  // Decap 3.x: registerMediaLibrary( libraryObject )  -- the object carries `name`.
   CMS.registerMediaLibrary(SuperbedLibrary);
   CMS.init();
 })();
