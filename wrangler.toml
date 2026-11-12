@@ -1,0 +1,16 @@
+# Cloudflare Workers + Static Assets 配置
+# 本项目是 Hugo 生成的纯静态站，构建命令已在 Cloudflare 向导里设为：
+#   hugo --minify --gc
+# 该命令在仓库根目录产出 public/，下面 [assets] 把它作为静态资源托管。
+# 这样无需单独的 Worker 脚本即可托管整个站点（含 /admin Decap 后台）。
+
+name = "diy365"
+account_id = "3a4f3c5177770d916bb80e202947bd84e"
+compatibility_date = "2024-11-01"
+
+[assets]
+# Hugo 构建输出目录
+directory = "./public"
+# 目录请求自动补 index.html；找不到文件时回退到 404.html（Hugo 已生成）
+html_handling = "auto-trailing-slash"
+not_found_handling = "404-page"
