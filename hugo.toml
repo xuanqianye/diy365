@@ -22,7 +22,7 @@ summaryLength = 28
   pinterestVerification = ""        # TODO: Pinterest HTML 标签内容
   googleVerification = ""           # TODO: Google Search Console 验证
   contactEmail = "copyright@diy365.cc"
-  githubRepo = "your-username/diy365"   # TODO: Decap CMS + 投稿后端用，改成你的仓库
+  githubRepo = "xuanqianye/diy365"   # TODO: Decap CMS + 投稿后端用，改成你的仓库
   # 投稿后端函数地址
   #   主部署 Cloudflare Pages → "/submit"（functions/submit.js 自动路由）
   #   切换到 Netlify        → "/.netlify/functions/submit"

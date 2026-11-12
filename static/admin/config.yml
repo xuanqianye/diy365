@@ -4,7 +4,7 @@
 
 backend:
   name: github
-  repo: your-username/diy365      # TODO: replace with your GitHub repo (owner/name)
+  repo: xuanqianye/diy365      # TODO: replace with your GitHub repo (owner/name)
   branch: main
   # client_id: PASTE_YOUR_GITHUB_OAUTH_CLIENT_ID_HERE   # TODO: uncomment + fill
 
