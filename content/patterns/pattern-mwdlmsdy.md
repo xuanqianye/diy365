@@ -1,6 +1,7 @@
 ---
-title: 测试
+title: 测试更新
 description: 测试
+date: 2026-11-13
 slug: pattern-mwdlmsdy
 draft: false
 categories:
@@ -11,8 +12,6 @@ difficulty: Easy
 yarn: ""
 hook: ""
 size: ""
-cover:
-  - https://pic1.imgdd.cc/i/034wJchoo3CFBOghqQlCge.webp
 pinImage:
   - https://pic1.imgdd.cc/i/034wJcjuwNuTVgeC3sYRC2.webp
   - https://pic1.imgdd.cc/i/034wJckwCd2qVYXNmO6ZA9.webp
@@ -32,9 +31,8 @@ pinImage:
   - https://pic1.imgdd.cc/i/034wJezBv9spcQM6ra6uU8.webp
   - https://pic1.imgdd.cc/i/034wJf2pgdRsJ0RlOWAZhW.webp
 author: ""
-date: 2026-11-12
 pdf: ""
+cover:
+  - https://pic1.imgdd.cc/i/034wJchoo3CFBOghqQlCge.webp
 submittedBy: ""
 ---
-
-
