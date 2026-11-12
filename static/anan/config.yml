@@ -45,16 +45,28 @@ collections:
           hint: "只填小写英文字母、数字和连字符，例如 mavi-crochet-doll。改短后旧链接会自动跳转，已分享出去的链接建议不要再改。",
           pattern: ['^$|^[a-z0-9]+(-[a-z0-9]+)*$', '只能用小写字母、数字和连字符，例如 mavi-crochet-doll'] }
       - { name: draft, label: "草稿（不发布）", widget: boolean, default: false, required: false }
+      # 从「分类管理 / 标签管理」集合里选已有项。保存的是名称字符串数组，
+      # 与 Hugo 的 categories/tags taxonomy 完全兼容。
       - name: categories
-        label: 分类
-        widget: list
+        label: 分类（从已有分类中选择）
+        widget: relation
+        collection: categories
+        search_fields: [title]
+        display_fields: [title]
+        value_field: title
+        multiple: true
         required: false
-        field: { name: category, label: 分类, widget: string, required: false }
+        hint: "输入关键字即可搜索已有分类；要新增分类请到左侧「分类管理」。"
       - name: tags
-        label: 标签
-        widget: list
+        label: 标签（从已有标签中选择）
+        widget: relation
+        collection: tags
+        search_fields: [title]
+        display_fields: [title]
+        value_field: title
+        multiple: true
         required: false
-        field: { name: tag, label: 标签, widget: string, required: false }
+        hint: "输入关键字即可搜索已有标签；要新增标签请到左侧「标签管理」。"
       - name: difficulty
         label: 难度
         widget: select
@@ -75,6 +87,32 @@ collections:
       - { name: author, label: 作者, widget: string, default: "DIY365", required: false }
       - { name: submittedBy, label: 投稿人, widget: string, required: false }
       - { name: body, label: "图解步骤（Markdown）", widget: markdown, required: false }
+
+  # 分类 / 标签集中管理：每个条目一个 md 文件，文章里用 relation 多选引用。
+  # 这些文件放在仓库根的 taxonomies/ 下，Hugo 不会把它们当内容页渲染；
+  # 前台的分类页/标签页仍由文章实际选用的分类自动生成。
+  - name: "categories"
+    label: "分类管理"
+    label_singular: "个分类"
+    folder: "taxonomies/categories"
+    create: true
+    slug: "{{slug}}"
+    editor:
+      preview: false
+    fields:
+      - { name: title, label: 分类名称, widget: string,
+          hint: "建议用英文，例如 Amigurumi。新增后需在文章里选用，前台才会出现该分类页；改名不会自动更新已发布文章。" }
+  - name: "tags"
+    label: "标签管理"
+    label_singular: "个标签"
+    folder: "taxonomies/tags"
+    create: true
+    slug: "{{slug}}"
+    editor:
+      preview: false
+    fields:
+      - { name: title, label: 标签名称, widget: string,
+          hint: "建议用英文。新增后需在文章里选用，前台才会出现该标签页；改名不会自动更新已发布文章。" }
 
   - name: "pages"
     label: "法律与信息页"
