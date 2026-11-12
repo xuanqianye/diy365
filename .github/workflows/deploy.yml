@@ -1,6 +1,6 @@
 # ============================================================
 # Deploy diy365 to Cloudflare Pages — AUTO on push
-# 路线：GitHub Actions 监听 push → 云端 Hugo 构建 → 上传 public/ 到 Pages
+# 路线：GitHub Actions 监听 push → 云端 Hugo 构建 → wrangler pages deploy 上传 public/ 到 Pages
 # 效果：在 Decap 后台发一篇文章（本质 = 改 GitHub 上的 .md 并 push），
 #       几分钟后 diy365.cc 自动更新，无需本地手动 wrangler deploy。
 #
@@ -8,13 +8,13 @@
 #   1) CLOUDFLARE_API_TOKEN  —— 具有 Account > Cloudflare Pages > Edit 权限的 API Token
 #   2) CLOUDFLARE_ACCOUNT_ID —— Cloudflare 账户 ID
 #
-# 迁移自 Workers Static Assets 的注意点：
-#   - 本工作流只部署 Hugo 静态产物到 Pages 项目 "diy365"。
-#   - 投稿 Worker（diy365-submit）、登录 Worker（diy365-auth）仍作为独立
-#     Cloudflare Workers 运行，不受影响；前端调用它们的地址保持不变。
-#   - 部署成功后 Pages 会给出 *.pages.dev 预览域名。要让 diy365.cc 显示
-#     Pages 内容，需在 Cloudflare 控制台把自定义域从原 Workers 路由改绑到
-#     这个 Pages 项目（一次性操作，之后全自动）。
+# 注意：原 cloudflare/pages-action 已被官方下架（404），改用官方的
+#       cloudflare/wrangler-action 执行 `wrangler pages deploy`。
+# 投稿 Worker（diy365-submit）、登录 Worker（diy365-auth）仍作为独立
+# Cloudflare Workers 运行，不受影响；前端调用它们的地址保持不变。
+# 部署成功后 Pages 会给出 *.pages.dev 预览域名。要让 diy365.cc 显示
+# Pages 内容，需在 Cloudflare 控制台把自定义域从原 Workers 路由改绑到
+# 这个 Pages 项目（一次性操作，之后全自动）。
 # ============================================================
 name: Deploy diy365 to Cloudflare Pages
 
@@ -48,11 +48,9 @@ jobs:
         run: hugo --minify --gc
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: diy365
-          directory: public
+          command: pages deploy public --project-name=diy365
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          branch: main
