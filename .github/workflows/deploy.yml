@@ -52,7 +52,9 @@ jobs:
           if [ -f wrangler.toml ]; then mv wrangler.toml wrangler.worker.bak; fi
 
       - name: Create Pages project
+        # 项目已存在时 wrangler 会报错，用 continue-on-error 跳过，不阻断后续部署（幂等）
         uses: cloudflare/wrangler-action@v4
+        continue-on-error: true
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
