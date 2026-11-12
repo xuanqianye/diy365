@@ -1,6 +1,15 @@
-/* Decap CMS custom media library: upload images to Superbed via our CF proxy.
- * Loaded after decap-cms.js with window.CMS_MANUAL_INIT = true, then CMS.init().
- * The Superbed token stays server-side (CF secret); the browser only calls /api/superbed-upload.
+/* Decap CMS custom media library: upload images DIRECTLY to Superbed from the browser.
+ *
+ * Why browser-direct (not a server proxy):
+ *   Superbed blocks datacenter IPs and non-browser requests (CF Workers and server-side
+ *   curl both get connection-reset on /upload). The editor's own browser (normal network)
+ *   is allowed, so we upload straight from the client.
+ *
+ * Security note:
+ *   The X-API-Key below is read from config.yml (media_library.config.apiKey) and is
+ *   necessarily PUBLIC here — Decap CMS runs entirely in the browser. This is the same
+ *   key PicGo/ShareX use for Superbed, so it matches intended use. To limit abuse, keep
+ *   your Superbed upload quota low and rotate the key if needed.
  */
 (function () {
   var CMS = window.CMS;
@@ -12,7 +21,8 @@
     init: function (args) {
       var options = (args && args.options) || {};
       var handleMediaUpload = args && args.handleMediaUpload;
-      var endpoint = (options.config && options.config.endpoint) || '/api/superbed-upload';
+      var endpoint = (options.config && options.config.endpoint) || 'https://api.superbed.cn/upload';
+      var apiKey = (options.config && options.config.apiKey) || '';
       var overlay = null;
 
       function open(close) {
@@ -61,7 +71,9 @@
             status.textContent = 'Uploading ' + (i + 1) + '/' + files.length + ': ' + file.name;
             var fd = new FormData();
             fd.append('file', file, file.name || ('image' + i + '.jpg'));
-            fetch(endpoint, { method: 'POST', body: fd })
+            var headers = {};
+            if (apiKey) headers['X-API-Key'] = apiKey;
+            fetch(endpoint, { method: 'POST', headers: headers, body: fd })
               .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
               .then(function (res) {
                 var url = res.d && (res.d.url || (res.d.data && res.d.data.url) || res.d.src);
@@ -70,7 +82,7 @@
                 i++; next();
               })
               .catch(function (e) {
-                status.textContent = 'Upload failed: ' + e.message;
+                status.textContent = 'Upload failed: ' + e.message + '. If blocked, try with your VPN on.';
                 uploadBtn.disabled = false;
               });
           }

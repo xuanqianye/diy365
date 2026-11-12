@@ -2,12 +2,15 @@
 # Docs: https://decapcms.org/docs/
 # IMPORTANT: change `repo` below and create a GitHub OAuth App (see README).
 
-# Custom media library: upload images to Superbed via our CF proxy (/api/superbed-upload).
-# The Superbed token lives server-side as a CF secret, never exposed to the browser.
+# Custom media library: upload images DIRECTLY to Superbed from the browser.
+# Superbed blocks datacenter IPs / non-browser requests, so a server proxy won't work;
+# the editor's own browser uploads instead. The X-API-Key is necessarily public here
+# (Decap runs in the browser) — same key PicGo/ShareX use. Keep quota low / rotate if abused.
 media_library:
   name: superbed
   config:
-    endpoint: /api/superbed-upload
+    endpoint: https://api.superbed.cn/upload
+    apiKey: 41871f8e5d6823960d3128b1ffb518a7
 
 backend:
   name: github
