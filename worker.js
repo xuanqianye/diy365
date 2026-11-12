@@ -28,7 +28,10 @@ export default {
         try {
           upstream = await fetch('https://api.superbed.cn/upload', {
             method: 'POST',
-            headers: { 'X-API-Key': env.SUPERBED_TOKEN || '' },
+            headers: {
+              'X-API-Key': env.SUPERBED_TOKEN || '',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            },
             body: fd,
             signal: controller.signal,
           });
