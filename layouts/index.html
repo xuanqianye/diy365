@@ -1,9 +1,10 @@
 {{ define "main" }}
+{{- $seo := merge site.Params (hugo.Data.seo | default dict) -}}
 <section class="hero">
-  <h1>{{ .Site.Params.brand }} — Free Crochet Patterns</h1>
-  <p>{{ .Site.Params.tagline }}</p>
+  <h1>{{ $seo.brand }} — Free Crochet Patterns</h1>
+  <p>{{ $seo.tagline }}</p>
 </section>
-{{ partial "adsense.html" (dict "slot" .Site.Params.adsenseSlotList "inline" false) }}
+{{ partial "adsense.html" (dict "slot" $seo.adsenseSlotList "inline" false) }}
 {{ partial "feed-controls.html" (dict) }}
 <div class="masonry" id="feedMasonry">
   {{ range first 24 (where .Site.RegularPages "Type" "patterns") }}

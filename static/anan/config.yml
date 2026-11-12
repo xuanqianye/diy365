@@ -39,6 +39,10 @@ collections:
     fields:
       - { name: title, label: 标题, widget: string, required: false }
       - { name: description, label: 描述, widget: string, required: false }
+      # 单篇 SEO：留空则回退到标题 / 描述 / 站点默认设置。
+      - { name: seoTitle, label: "SEO 标题（留空用文章标题）", widget: string, required: false }
+      - { name: seoDescription, label: "SEO 描述（留空用上面的「描述」）", widget: string, required: false }
+      - { name: noindex, label: "禁止搜索引擎收录此篇", widget: boolean, default: false, required: false }
       # 自定义短链接：Hugo 会用 front matter 的 slug 覆盖「文件名」那段 URL。
       # 留空则退回标题自动生成的长链接。填 2~4 个英文词即可，例如 mavi-crochet-doll。
       - { name: slug, label: "自定义短链接（留空则用标题）", widget: string, required: false,
@@ -113,6 +117,28 @@ collections:
     fields:
       - { name: title, label: 标签名称, widget: string,
           hint: "建议用英文。新增后需在文章里选用，前台才会出现该标签页；改名不会自动更新已发布文章。" }
+
+  # 全站 SEO / 站点信息：编辑 data/seo.json，重新构建部署后生效。
+  # 模板用 merge(site.Params, site.Data.seo) 读取，这里没填的键自动回退到 hugo.toml。
+  - name: "seo"
+    label: "SEO 设置"
+    files:
+      - name: "site"
+        label: "全站 SEO（标题 / 描述 / 验证码 / 广告 ID）"
+        file: "data/seo.json"
+        editor:
+          preview: false
+        fields:
+          - { name: brand, label: 品牌名（标题后缀 / 页眉 / 页脚）, widget: string }
+          - { name: siteTitle, label: 首页 title（浏览器标签标题）, widget: string }
+          - { name: description, label: 默认 meta description, widget: string, required: false }
+          - { name: tagline, label: 首页标语, widget: string, required: false }
+          - { name: ogImage, label: 默认分享图（留空则用文章封面 / 步骤图）, widget: image, required: false }
+          - { name: googleVerification, label: Google Search Console 验证码, widget: string, required: false }
+          - { name: pinterestVerification, label: Pinterest 域名验证码, widget: string, required: false }
+          - { name: adsensePublisher, label: "AdSense 发布商 ID（占位值不会加载脚本）", widget: string, required: false }
+          - { name: adsenseSlotList, label: AdSense 列表页广告位, widget: string, required: false }
+          - { name: adsenseSlotPost, label: AdSense 文章页广告位, widget: string, required: false }
 
   - name: "pages"
     label: "法律与信息页"

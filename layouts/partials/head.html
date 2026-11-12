@@ -1,7 +1,11 @@
+{{- $seo := merge site.Params (hugo.Data.seo | default dict) -}}
+{{- $pageTitle := .Params.seoTitle | default .Title -}}
+{{- $pageDesc := .Params.seoDescription | default .Description | default $seo.description -}}
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ if .Title }}{{ .Title }} | {{ .Site.Params.brand }}{{ else }}{{ .Site.Title }}{{ end }}</title>
-<meta name="description" content="{{ with .Description }}{{ . }}{{ else }}{{ .Site.Params.description }}{{ end }}">
+<title>{{ if .IsHome }}{{ $seo.siteTitle | default site.Title }}{{ else if $pageTitle }}{{ $pageTitle }} | {{ $seo.brand }}{{ else }}{{ $seo.siteTitle | default site.Title }}{{ end }}</title>
+<meta name="description" content="{{ $pageDesc }}">
+{{ if .Params.noindex }}<meta name="robots" content="noindex,nofollow">{{ end }}
 <link rel="canonical" href="{{ .Permalink }}">
 <link rel="stylesheet" href="{{ "css/style.css" | relURL }}">
 <link rel="stylesheet" href="{{ "css/share.css" | relURL }}">
@@ -13,20 +17,20 @@
 <link rel="icon" type="image/png" sizes="32x32" href="{{ "favicon-32.png" | relURL }}">
 <link rel="icon" type="image/png" sizes="192x192" href="{{ "favicon-192.png" | relURL }}">
 <link rel="apple-touch-icon" href="{{ "apple-touch-icon.png" | relURL }}">
-{{ with .Site.Params.googleVerification }}<meta name="google-site-verification" content="{{ . }}">{{ end }}
-{{ with .Site.Params.pinterestVerification }}<meta name="p:domain_verify" content="{{ . }}">{{ end }}
+{{ with $seo.googleVerification }}<meta name="google-site-verification" content="{{ . }}">{{ end }}
+{{ with $seo.pinterestVerification }}<meta name="p:domain_verify" content="{{ . }}">{{ end }}
 
 <!-- Open Graph / Pinterest -->
 <meta property="og:type" content="{{ if .IsPage }}article{{ else }}website{{ end }}">
-<meta property="og:title" content="{{ .Title }}">
-<meta property="og:description" content="{{ with .Description }}{{ . }}{{ else }}{{ .Site.Params.description }}{{ end }}">
+<meta property="og:title" content="{{ $pageTitle }}">
+<meta property="og:description" content="{{ $pageDesc }}">
 <meta property="og:url" content="{{ .Permalink }}">
-{{ $ogImg := partial "first-url.html" (or .Params.pinImage .Params.cover) }}
+{{ $ogImg := partial "first-url.html" (or .Params.pinImage .Params.cover $seo.ogImage) }}
 {{ with $ogImg }}<meta property="og:image" content="{{ . }}">{{ end }}
 <meta name="twitter:card" content="summary_large_image">
 
 <!-- AdSense: injected only after a real Publisher ID is set (avoids placeholder errors) -->
-{{ $pub := .Site.Params.adsensePublisher }}
+{{ $pub := $seo.adsensePublisher }}
 {{ if and $pub (not (findRE "0{10,}" $pub)) }}
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ $pub }}" crossorigin="anonymous"></script>
 {{ end }}

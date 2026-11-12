@@ -1,13 +1,16 @@
+{{- $seo := merge site.Params (hugo.Data.seo | default dict) -}}
+{{- $pageTitle := .Params.seoTitle | default .Title -}}
+{{- $pageDesc := .Params.seoDescription | default .Description | default $seo.description -}}
 {{ if .IsPage }}
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "Article",
-  "headline": "{{ .Title }}",
-  "description": "{{ with .Description }}{{ . }}{{ else }}{{ .Site.Params.description }}{{ end }}",
-  "image": "{{ partial "first-url.html" (or .Params.pinImage .Params.cover) }}",
+  "headline": "{{ $pageTitle }}",
+  "description": "{{ $pageDesc }}",
+  "image": "{{ partial "first-url.html" (or .Params.pinImage .Params.cover $seo.ogImage) }}",
   "datePublished": "{{ .Date }}",
-  "author": { "@type": "Organization", "name": "{{ .Site.Params.brand }}" }
+  "author": { "@type": "Organization", "name": "{{ $seo.brand }}" }
 }
 </script>
 {{ else }}
@@ -15,7 +18,7 @@
 {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  "name": "{{ .Site.Params.brand }}",
+  "name": "{{ $seo.brand }}",
   "url": "{{ .Site.BaseURL }}"
 }
 </script>

@@ -1,6 +1,8 @@
-{{ $pub := .Site.Params.adsensePublisher }}
-{{ $slot := .slot }}
-{{ $inline := .inline }}
+{{- $seo := merge site.Params (hugo.Data.seo | default dict) -}}
+{{- $pub := $seo.adsensePublisher -}}
+{{/* Slot comes from the SEO settings so callers do not need to know which slot to pass. */}}
+{{- $slot := cond .inline $seo.adsenseSlotPost $seo.adsenseSlotList -}}
+{{- $inline := .inline -}}
 {{ if and $pub (not (findRE "0{10,}" $pub)) $slot (not (findRE "0{8,}" $slot)) }}
 <ins class="adsbygoogle"
      style="display:block"

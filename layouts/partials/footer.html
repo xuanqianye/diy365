@@ -1,3 +1,4 @@
+{{- $seo := merge site.Params (hugo.Data.seo | default dict) -}}
 <footer class="site-footer">
   <div class="container">
     <div class="footer-links">
@@ -12,6 +13,6 @@
       <a href="{{ "/user-agreement/" | relURL }}">User Agreement</a>
       <a href="{{ "/crochet-abbreviations/" | relURL }}">Crochet Abbreviations</a>
     </div>
-    <div class="copyright">© {{ now.Year }} {{ .Site.Params.brand }} · Free crochet patterns shared by the community.</div>
+    <div class="copyright">© {{ now.Year }} {{ $seo.brand }} · Free crochet patterns shared by the community.</div>
   </div>
 </footer>

@@ -1,6 +1,7 @@
+{{- $seo := merge site.Params (hugo.Data.seo | default dict) -}}
 <header class="site-header">
   <div class="container">
-    <a class="brand" href="{{ "/" | relURL }}">{{ .Site.Params.brand }}</a>
+    <a class="brand" href="{{ "/" | relURL }}">{{ $seo.brand }}</a>
     <button class="nav-toggle" aria-label="menu" onclick="document.getElementById('nav').classList.toggle('open')">☰</button>
     <nav class="main-nav" id="nav">
       <a href="{{ "/" | relURL }}">Home</a>
