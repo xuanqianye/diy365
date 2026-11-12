@@ -52,12 +52,11 @@ jobs:
           if [ -f wrangler.toml ]; then mv wrangler.toml wrangler.worker.bak; fi
 
       - name: Create Pages project
-        # 首次运行创建 diy365 项目；若已存在会失败，下一轮再补 continue-on-error
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages project create diy365 --production-branch=main --yes
+          command: pages project create diy365 --production-branch=main
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v4
