@@ -47,6 +47,10 @@ jobs:
       - name: Build
         run: hugo --minify --gc
 
+      - name: Move Worker wrangler.toml aside (avoid Pages confusion)
+        run: |
+          if [ -f wrangler.toml ]; then mv wrangler.toml wrangler.worker.bak; fi
+
       - name: Create Pages project
         # 首次运行创建 diy365 项目；若已存在会失败，下一轮再补 continue-on-error
         uses: cloudflare/wrangler-action@v4
