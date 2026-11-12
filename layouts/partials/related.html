@@ -1,0 +1,28 @@
+{{- /* Related patterns for the bottom of a single pattern page.
+       Score = shared categories *2 + shared tags *1. Falls back to the 4
+       most recent other patterns when nothing shares a taxonomy. */ -}}
+{{- $cur := . -}}
+{{- $cats := .Params.categories | default slice -}}
+{{- $tags := .Params.tags | default slice -}}
+{{- $pages := where .Site.RegularPages "Section" "patterns" -}}
+{{- $pages = where $pages "RelPermalink" "ne" $cur.RelPermalink -}}
+{{- $scored := slice -}}
+{{- range $pages -}}
+  {{- $p := . -}}
+  {{- $s := 0 -}}
+  {{- range $p.Params.categories | default slice }}{{ if in $cats . }}{{ $s = add $s 2 }}{{ end }}{{ end -}}
+  {{- range $p.Params.tags | default slice }}{{ if in $tags . }}{{ $s = add $s 1 }}{{ end }}{{ end -}}
+  {{- if gt $s 0 }}{{ $scored = $scored | append (dict "p" $p "s" $s) }}{{ end -}}
+{{- end -}}
+{{- if eq (len $scored) 0 -}}
+  {{- range first 4 $pages }}{{ $scored = $scored | append (dict "p" . "s" 0) }}{{ end -}}
+{{- end -}}
+{{- $top := first 4 (sort $scored "s" "desc") -}}
+{{- if gt (len $top) 0 -}}
+<section class="related" aria-label="Related patterns">
+  <h2 class="related-title">You might also like</h2>
+  <div class="masonry">
+    {{- range $top }}{{ partial "pattern-card.html" .p }}{{ end -}}
+  </div>
+</section>
+{{- end -}}

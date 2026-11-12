@@ -108,6 +108,20 @@ img { max-width: 100%; height: auto; display: block; }
 .pattern-step { width: 100%; height: auto; border-radius: 10px; background: #f6ece9; }
 .pin-share { margin: 18px 0; text-align: center; }
 
+/* Back button (top-left of a pattern article) */
+.back-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin: 0 0 14px; padding: 6px 14px; border: 1px solid var(--border);
+  border-radius: 999px; background: var(--surface); color: var(--primary-dark);
+  font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+}
+.back-btn:hover { border-color: var(--primary); background: #fdeef1; text-decoration: none; }
+
+/* Related patterns (bottom of a pattern article) */
+.related { margin: 30px auto 0; }
+.related-title { font-size: 1.25rem; margin: 0 0 14px; padding-left: 4px; }
+.related .masonry { margin-top: 0; }
+
 /* ---------------- Ad slots ---------------- */
 .ad-slot {
   margin: 22px 0; text-align: center; min-height: 90px;
