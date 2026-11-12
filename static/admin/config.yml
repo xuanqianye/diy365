@@ -16,7 +16,7 @@ backend:
   name: github
   repo: xuanqianye/diy365      # TODO: replace with your GitHub repo (owner/name)
   branch: main
-  # client_id: PASTE_YOUR_GITHUB_OAUTH_CLIENT_ID_HERE   # TODO: uncomment + fill
+  client_id: Ov23liLP7IRGMwtDriB4
 
 # Images are hosted on superbed (external), so we do not store media in the repo.
 media_folder: "static/uploads"     # unused but kept to satisfy Decap
