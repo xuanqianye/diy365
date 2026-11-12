@@ -10,6 +10,10 @@
  *   necessarily PUBLIC here — Decap CMS runs entirely in the browser. This is the same
  *   key PicGo/ShareX use for Superbed, so it matches intended use. To limit abuse, keep
  *   your Superbed upload quota low and rotate the key if needed.
+ *
+ * IMPORTANT: Decap 3.x registerMediaLibrary expects the LIBRARY OBJECT as the first arg
+ * (not a string name), and init() receives `handleInsert` (not `handleMediaUpload`).
+ * Decap also hides the media button unless enableStandalone() returns true.
  */
 (function () {
   var CMS = window.CMS;
@@ -20,7 +24,8 @@
     config: {},
     init: function (args) {
       var options = (args && args.options) || {};
-      var handleMediaUpload = args && args.handleMediaUpload;
+      // Decap 3.x passes `handleInsert`; older docs called it `handleMediaUpload`.
+      var handleInsert = args && (args.handleInsert || args.handleMediaUpload);
       var endpoint = (options.config && options.config.endpoint) || 'https://api.superbed.cn/upload';
       var apiKey = (options.config && options.config.apiKey) || '';
       var overlay = null;
@@ -50,7 +55,7 @@
         function closeModal() {
           if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
           overlay = null;
-          if (typeof close === 'function') close();
+          if (typeof close === 'function') { try { close(); } catch (e) { console.error(e); } }
         }
         cancelBtn.addEventListener('click', closeModal);
 
@@ -63,7 +68,7 @@
           function next() {
             if (i >= files.length) {
               status.textContent = 'Done — inserting ' + results.length + ' image(s).';
-              try { handleMediaUpload(results); } catch (e) { console.error(e); }
+              try { if (typeof handleInsert === 'function') handleInsert(results); } catch (e) { console.error(e); }
               setTimeout(closeModal, 500);
               return;
             }
@@ -78,7 +83,7 @@
               .then(function (res) {
                 var url = res.d && (res.d.url || (res.d.data && res.d.data.url) || res.d.src);
                 if (!res.ok || !url) throw new Error((res.d && (res.d.error || res.d.msg)) || ('HTTP ' + (res.ok ? 200 : 'err')));
-                results.push({ id: url, url: url });
+                results.push({ id: url, name: file.name, url: url });
                 i++; next();
               })
               .catch(function (e) {
@@ -101,11 +106,12 @@
         },
         onClearControl: function () {},
         onRemoveControl: function () {},
-        onSelection: function () {}
+        enableStandalone: function () { return true; }
       };
     }
   };
 
-  CMS.registerMediaLibrary('superbed', SuperbedLibrary);
+  // Decap 3.x: registerMediaLibrary( libraryObject )  -- the object carries `name`.
+  CMS.registerMediaLibrary(SuperbedLibrary);
   CMS.init();
 })();

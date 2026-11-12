@@ -44,9 +44,9 @@ collections:
       - { name: yarn, label: Yarn, widget: string }
       - { name: hook, label: Hook, widget: string }
       - { name: size, label: Size, widget: string }
-      - { name: pdf, label: "PDF URL (superbed)", widget: string }
-      - { name: cover, label: "Cover Image URL (superbed)", widget: string }
-      - { name: pinImage, label: "Pinterest Vertical Image URL (superbed)", widget: string }
+      - { name: pdf, label: "PDF URL (superbed)", widget: file }
+      - { name: cover, label: "Cover Image URL (superbed)", widget: image }
+      - { name: pinImage, label: "Pinterest Vertical Image URL (superbed)", widget: image }
       - { name: author, label: Author, widget: string, default: "DIY365" }
       - { name: submittedBy, label: Submitted By, widget: string }
       - { name: body, label: "Pattern Steps (Markdown)", widget: markdown }
