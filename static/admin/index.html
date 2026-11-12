@@ -8,6 +8,9 @@
 </head>
 <body>
   <!-- Decap CMS auto-loads ./config.yml from this same /admin/ folder -->
+  <!-- CMS_MANUAL_INIT lets us register the Superbed media library before CMS.init() -->
+  <script>window.CMS_MANUAL_INIT = true;</script>
   <script src="https://unpkg.com/decap-cms@^3.3.3/dist/decap-cms.js"></script>
+  <script src="./superbed-uploader.js"></script>
 </body>
 </html>

@@ -2,6 +2,13 @@
 # Docs: https://decapcms.org/docs/
 # IMPORTANT: change `repo` below and create a GitHub OAuth App (see README).
 
+# Custom media library: upload images to Superbed via our CF proxy (/api/superbed-upload).
+# The Superbed token lives server-side as a CF secret, never exposed to the browser.
+media_library:
+  name: superbed
+  config:
+    endpoint: /api/superbed-upload
+
 backend:
   name: github
   repo: xuanqianye/diy365      # TODO: replace with your GitHub repo (owner/name)
