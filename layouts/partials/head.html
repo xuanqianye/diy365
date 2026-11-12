@@ -1,0 +1,23 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ if .Title }}{{ .Title }} | {{ .Site.Params.brand }}{{ else }}{{ .Site.Title }}{{ end }}</title>
+<meta name="description" content="{{ with .Description }}{{ . }}{{ else }}{{ .Site.Params.description }}{{ end }}">
+<link rel="canonical" href="{{ .Permalink }}">
+<link rel="stylesheet" href="{{ "css/style.css" | relURL }}">
+{{ with .Site.Params.googleVerification }}<meta name="google-site-verification" content="{{ . }}">{{ end }}
+{{ with .Site.Params.pinterestVerification }}<meta name="p:domain_verify" content="{{ . }}">{{ end }}
+
+<!-- Open Graph / Pinterest -->
+<meta property="og:type" content="{{ if .IsPage }}article{{ else }}website{{ end }}">
+<meta property="og:title" content="{{ .Title }}">
+<meta property="og:description" content="{{ with .Description }}{{ . }}{{ else }}{{ .Site.Params.description }}{{ end }}">
+<meta property="og:url" content="{{ .Permalink }}">
+{{ with .Params.pinImage }}<meta property="og:image" content="{{ . }}">{{ else }}{{ with .Params.cover }}<meta property="og:image" content="{{ . }}">{{ end }}{{ end }}
+<meta name="twitter:card" content="summary_large_image">
+
+<!-- AdSense: 仅在填入真实 Publisher ID 后注入（避免占位符报错） -->
+{{ $pub := .Site.Params.adsensePublisher }}
+{{ if and $pub (not (findRE "0{10,}" $pub)) }}
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ $pub }}" crossorigin="anonymous"></script>
+{{ end }}
+{{ partial "seo-schema.html" . }}

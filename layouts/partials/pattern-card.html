@@ -1,0 +1,16 @@
+<article class="card">
+  <a href="{{ .RelPermalink }}">
+    {{ with .Params.cover }}
+    <img class="card-img" src="{{ . }}" alt="{{ $.Title }}" loading="lazy" width="300" height="400">
+    {{ else }}
+    <div class="card-img" style="display:flex;align-items:center;justify-content:center;color:#c9b8b8;font-size:.8rem">No image</div>
+    {{ end }}
+    <div class="card-body">
+      <h3 class="card-title">{{ .Title }}</h3>
+      <div class="card-meta">
+        {{ with .Params.categories }}<span class="badge">{{ index . 0 }}</span>{{ end }}
+        {{ with .Params.difficulty }}<span>{{ . }}</span>{{ end }}
+      </div>
+    </div>
+  </a>
+</article>

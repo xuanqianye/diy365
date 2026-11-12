@@ -1,0 +1,73 @@
+# Decap CMS configuration
+# Docs: https://decapcms.org/docs/
+# IMPORTANT: change `repo` below and create a GitHub OAuth App (see README).
+
+backend:
+  name: github
+  repo: your-username/diy365      # TODO: replace with your GitHub repo (owner/name)
+  branch: main
+  # client_id: PASTE_YOUR_GITHUB_OAUTH_CLIENT_ID_HERE   # TODO: uncomment + fill
+
+# Images are hosted on superbed (external), so we do not store media in the repo.
+media_folder: "static/uploads"     # unused but kept to satisfy Decap
+public_folder: "/uploads"
+
+collections:
+  - name: "patterns"
+    label: "Crochet Patterns"
+    folder: "content/patterns"
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { name: title, label: Title, widget: string }
+      - { name: description, label: Description, widget: string }
+      - { name: draft, label: "Draft (unpublished)", widget: boolean, default: false }
+      - name: categories
+        label: Category
+        widget: list
+        field: { name: category, label: Category, widget: string }
+      - name: tags
+        label: Tags
+        widget: list
+        field: { name: tag, label: Tag, widget: string }
+      - { name: difficulty, label: Difficulty, widget: select, options: [Easy, Intermediate, Advanced], default: Easy }
+      - { name: yarn, label: Yarn, widget: string }
+      - { name: hook, label: Hook, widget: string }
+      - { name: size, label: Size, widget: string }
+      - { name: pdf, label: "PDF URL (superbed)", widget: string }
+      - { name: cover, label: "Cover Image URL (superbed)", widget: string }
+      - { name: pinImage, label: "Pinterest Vertical Image URL (superbed)", widget: string }
+      - { name: author, label: Author, widget: string, default: "DIY365" }
+      - { name: submittedBy, label: Submitted By, widget: string }
+      - { name: body, label: "Pattern Steps (Markdown)", widget: markdown }
+
+  - name: "pages"
+    label: "Legal & Info Pages"
+    files:
+      - { name: about, label: "About Us", file: "content/pages/about.md",
+          fields: [ {name: title, widget: string}, {name: description, widget: string},
+                    {name: pagetype, widget: hidden, default: legal}, {name: body, widget: markdown} ] }
+      - { name: privacy, label: "Privacy Policy", file: "content/pages/privacy.md",
+          fields: [ {name: title, widget: string}, {name: description, widget: string},
+                    {name: pagetype, widget: hidden, default: legal}, {name: body, widget: markdown} ] }
+      - { name: terms, label: "Terms of Service", file: "content/pages/terms.md",
+          fields: [ {name: title, widget: string}, {name: description, widget: string},
+                    {name: pagetype, widget: hidden, default: legal}, {name: body, widget: markdown} ] }
+      - { name: copyright-policy, label: "Copyright Policy", file: "content/pages/copyright-policy.md",
+          fields: [ {name: title, widget: string}, {name: description, widget: string},
+                    {name: pagetype, widget: hidden, default: legal}, {name: body, widget: markdown} ] }
+      - { name: disclaimer, label: "Disclaimer", file: "content/pages/disclaimer.md",
+          fields: [ {name: title, widget: string}, {name: description, widget: string},
+                    {name: pagetype, widget: hidden, default: legal}, {name: body, widget: markdown} ] }
+      - { name: user-agreement, label: "User Agreement", file: "content/pages/user-agreement.md",
+          fields: [ {name: title, widget: string}, {name: description, widget: string},
+                    {name: pagetype, widget: hidden, default: legal}, {name: body, widget: markdown} ] }
+      - { name: contact, label: "Contact (form page)", file: "content/pages/contact.md",
+          fields: [ {name: title, widget: string}, {name: description, widget: string},
+                    {name: pagetype, widget: hidden, default: form}, {name: body, widget: markdown} ] }
+      - { name: copyright-removal, label: "Copyright Removal (form page)", file: "content/pages/copyright-removal.md",
+          fields: [ {name: title, widget: string}, {name: description, widget: string},
+                    {name: pagetype, widget: hidden, default: form}, {name: body, widget: markdown} ] }
+      - { name: submit, label: "Submit (form page)", file: "content/pages/submit.md",
+          fields: [ {name: title, widget: string}, {name: description, widget: string},
+                    {name: pagetype, widget: hidden, default: form}, {name: body, widget: markdown} ] }

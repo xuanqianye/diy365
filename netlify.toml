@@ -1,0 +1,22 @@
+# Netlify 部署配置（可切换部署方案的备选目标）
+# 在 Netlify 导入本仓库后，表单 action 需改为 /.netlify/functions/submit
+# （把 hugo.toml 的 params.submitEndpoint 改成 "/.netlify/functions/submit"）
+
+[build]
+  publish = "public"
+  command = "hugo --minify --gc"
+
+[build.environment]
+  HUGO_VERSION = "0.140.0"
+  HUGO_ENV = "production"
+
+# 投稿 / 联系 / DMCA 后端走 Netlify Functions（netlify/functions/submit.js）
+[functions]
+  directory = "netlify/functions"
+
+# 安全：屏蔽常见 AI 爬虫（与 static/robots.txt 互补，robots 仅礼貌性）
+[[redirects]]
+  from = "/submit"
+  to = "/.netlify/functions/submit"
+  status = 200
+  force = true

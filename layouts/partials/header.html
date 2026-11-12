@@ -1,0 +1,13 @@
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="{{ "/" | relURL }}">{{ .Site.Params.brand }}</a>
+    <button class="nav-toggle" aria-label="menu" onclick="document.getElementById('nav').classList.toggle('open')">☰</button>
+    <nav class="main-nav" id="nav">
+      <a href="{{ "/patterns/" | relURL }}">Patterns</a>
+      <a href="{{ "/categories/" | relURL }}">Categories</a>
+      <a href="{{ "/tags/" | relURL }}">Tags</a>
+      <a href="{{ "/submit/" | relURL }}">Submit a Pattern</a>
+      <a href="{{ "/about/" | relURL }}">About</a>
+    </nav>
+  </div>
+</header>

@@ -1,0 +1,13 @@
+{{ define "main" }}
+<header class="hero">
+  <h1>{{ .Title }}</h1>
+  <p>{{ with .Description }}{{ . }}{{ end }}</p>
+</header>
+{{ partial "adsense.html" (dict "slot" .Site.Params.adsenseSlotList "inline" false) }}
+<div class="masonry">
+  {{ range .Paginator.Pages }}
+    {{ partial "pattern-card.html" . }}
+  {{ end }}
+</div>
+{{ template "_internal/pagination.html" . }}
+{{ end }}

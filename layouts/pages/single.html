@@ -1,0 +1,10 @@
+{{ define "main" }}
+{{ if eq .Params.pagetype "form" }}
+  <div class="container">{{ .Content }}</div>
+{{ else }}
+<article class="legal">
+  <h1>{{ .Title }}</h1>
+  {{ .Content }}
+</article>
+{{ end }}
+{{ end }}

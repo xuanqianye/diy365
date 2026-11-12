@@ -1,0 +1,22 @@
+{{ if .IsPage }}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "{{ .Title }}",
+  "description": "{{ with .Description }}{{ . }}{{ else }}{{ .Site.Params.description }}{{ end }}",
+  "image": "{{ with .Params.pinImage }}{{ . }}{{ else }}{{ with .Params.cover }}{{ . }}{{ end }}{{ end }}",
+  "datePublished": "{{ .Date }}",
+  "author": { "@type": "Organization", "name": "{{ .Site.Params.brand }}" }
+}
+</script>
+{{ else }}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "{{ .Site.Params.brand }}",
+  "url": "{{ .Site.BaseURL }}"
+}
+</script>
+{{ end }}

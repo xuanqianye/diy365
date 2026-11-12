@@ -1,0 +1,71 @@
+{{ $type := .Get "type" | default "submit" }}
+{{ $ep := .Site.Params.submitEndpoint }}
+{{ $brand := .Site.Params.brand }}
+
+{{ if eq $type "submit" }}
+<form class="form-wrap" method="POST" action="{{ $ep }}">
+  <h2 style="margin-top:0">Submit Your Crochet Pattern</h2>
+  <p class="form-note">No registration required. Submissions are reviewed by our moderators and published after approval. By submitting you confirm the pattern is original or you have permission to share it.</p>
+  <label>Your Name / Alias *</label>
+  <input name="name" required maxlength="80">
+  <label>Email (review contact only) *</label>
+  <input name="email" type="email" required maxlength="120">
+  <label>Pattern Title *</label>
+  <input name="title" required maxlength="160">
+  <label>Category</label>
+  <input name="category" placeholder="e.g. Amigurumi, Blanket, Toy" maxlength="60">
+  <label>Difficulty</label>
+  <select name="difficulty">
+    <option>Easy</option><option>Intermediate</option><option>Advanced</option>
+  </select>
+  <label>Short Description</label>
+  <textarea name="description" placeholder="One paragraph describing the pattern"></textarea>
+  <label>Image URLs (superbed links, one per line) *</label>
+  <textarea name="images" placeholder="https://your-superbed-domain/cover.webp&#10;https://your-superbed-domain/step1.webp"></textarea>
+  <label>Pattern Steps (Markdown) *</label>
+  <textarea name="steps" required placeholder="## Materials&#10;- ...&#10;## Pattern&#10;Round 1: MR 6sc (6)"></textarea>
+  <input type="hidden" name="form_type" value="submission">
+  <button class="btn" type="submit">Submit for Review</button>
+</form>
+
+{{ else if eq $type "contact" }}
+<form class="form-wrap" method="POST" action="{{ $ep }}">
+  <h2 style="margin-top:0">Contact Us</h2>
+  <label>Your Name *</label>
+  <input name="name" required maxlength="80">
+  <label>Email *</label>
+  <input name="email" type="email" required maxlength="120">
+  <label>Subject</label>
+  <input name="subject" maxlength="160">
+  <label>Message *</label>
+  <textarea name="message" required></textarea>
+  <input type="hidden" name="form_type" value="contact">
+  <button class="btn" type="submit">Send Message</button>
+</form>
+
+{{ else if eq $type "dmca" }}
+<form class="form-wrap" method="POST" action="{{ $ep }}">
+  <h2 style="margin-top:0">Copyright Removal Request</h2>
+  <p class="form-note">To comply with the DMCA, please provide all of the following. Incomplete requests may be delayed.</p>
+  <label>Your Full Legal Name *</label>
+  <input name="name" required maxlength="120">
+  <label>Mailing Address *</label>
+  <input name="address" required maxlength="300">
+  <label>Phone Number *</label>
+  <input name="phone" required maxlength="40">
+  <label>Email *</label>
+  <input name="email" type="email" required maxlength="120">
+  <label>Description of the Copyrighted Work *</label>
+  <textarea name="work" required placeholder="Identify the original work you claim is infringed"></textarea>
+  <label>URL(s) of the Infringing Material on {{ $brand }} *</label>
+  <textarea name="infringing" required placeholder="https://www.diy365.cc/patterns/..."></textarea>
+  <label>Statement of Good-Faith Belief *</label>
+  <textarea name="goodfaith" required>I have a good-faith belief that the use of the material is not authorized by the copyright owner, its agent, or the law.</textarea>
+  <label>Statement of Accuracy Under Penalty of Perjury *</label>
+  <textarea name="accuracy" required>The information above is accurate, and I am the copyright owner or authorized to act on behalf of the owner.</textarea>
+  <label>Electronic Signature (type your full name) *</label>
+  <input name="signature" required maxlength="120">
+  <input type="hidden" name="form_type" value="dmca">
+  <button class="btn" type="submit">Submit Removal Request</button>
+</form>
+{{ end }}

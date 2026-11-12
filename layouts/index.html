@@ -1,0 +1,15 @@
+{{ define "main" }}
+<section class="hero">
+  <h1>{{ .Site.Params.brand }} — Free Crochet Patterns</h1>
+  <p>{{ .Site.Params.tagline }}</p>
+</section>
+{{ partial "adsense.html" (dict "slot" .Site.Params.adsenseSlotList "inline" false) }}
+<div class="masonry">
+  {{ range first 24 (where .Site.RegularPages "Type" "patterns") }}
+    {{ partial "pattern-card.html" . }}
+  {{ end }}
+</div>
+<div class="pagination">
+  <a href="{{ "/patterns/" | relURL }}">Browse all patterns →</a>
+</div>
+{{ end }}

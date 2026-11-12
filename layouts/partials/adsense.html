@@ -1,0 +1,14 @@
+{{ $pub := .Site.Params.adsensePublisher }}
+{{ $slot := .slot }}
+{{ $inline := .inline }}
+{{ if and $pub (not (findRE "0{10,}" $pub)) $slot (not (findRE "0{8,}" $slot)) }}
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="{{ $pub }}"
+     data-ad-slot="{{ $slot }}"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+{{ else }}
+<div class="ad-slot{{ if $inline }} inline{{ end }}"><span class="ad-label">Advertisement</span></div>
+{{ end }}

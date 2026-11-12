@@ -1,0 +1,165 @@
+/* ============================================================
+   DIY365 — Free Crochet Patterns
+   Light, image-first, mobile-friendly. Core Web Vitals friendly.
+   ============================================================ */
+
+:root {
+  --bg: #fffaf7;
+  --surface: #ffffff;
+  --primary: #d96b86;
+  --primary-dark: #c2536f;
+  --accent: #f4a9b8;
+  --text: #2d2a2e;
+  --muted: #8a8288;
+  --border: #f0e3e0;
+  --radius: 14px;
+  --shadow: 0 2px 10px rgba(217, 107, 134, 0.08);
+  --maxw: 1240px;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--primary-dark); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+img { max-width: 100%; height: auto; display: block; }
+
+.container { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
+
+/* ---------------- Header ---------------- */
+.site-header {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: saturate(180%) blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.site-header .container {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 60px; gap: 16px;
+}
+.brand { font-size: 1.4rem; font-weight: 800; color: var(--primary); letter-spacing: -0.5px; }
+.brand:hover { text-decoration: none; }
+.main-nav { display: flex; gap: 18px; flex-wrap: wrap; }
+.main-nav a { color: var(--text); font-size: 0.92rem; font-weight: 500; }
+.main-nav a:hover { color: var(--primary); text-decoration: none; }
+.nav-toggle { display: none; background: none; border: 0; font-size: 1.4rem; cursor: pointer; color: var(--text); }
+
+/* ---------------- Hero / intro ---------------- */
+.hero { padding: 28px 0 8px; text-align: center; }
+.hero h1 { font-size: 2rem; margin: 0 0 6px; }
+.hero p { color: var(--muted); margin: 0 auto; max-width: 620px; }
+
+/* ---------------- Masonry (CSS columns) ---------------- */
+.masonry {
+  column-count: 4;
+  column-gap: 18px;
+  margin: 22px 0;
+}
+@media (max-width: 1100px) { .masonry { column-count: 3; } }
+@media (max-width: 760px)  { .masonry { column-count: 2; column-gap: 12px; } }
+@media (max-width: 460px)  { .masonry { column-count: 1; } }
+
+.card {
+  break-inside: avoid;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin: 0 0 18px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.card:hover { transform: translateY(-3px); box-shadow: 0 8px 22px rgba(217,107,134,0.14); }
+.card a { color: inherit; }
+.card a:hover { text-decoration: none; }
+.card-img { width: 100%; background: #f6ece9; aspect-ratio: 3/4; object-fit: cover; }
+.card-body { padding: 12px 14px 14px; }
+.card-title { font-size: 0.98rem; font-weight: 700; margin: 0 0 6px; line-height: 1.35; }
+.card-meta { font-size: 0.78rem; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 999px;
+  background: #fdeef1; color: var(--primary-dark); font-size: 0.72rem; font-weight: 600;
+}
+
+/* ---------------- Single post ---------------- */
+.post { max-width: 760px; margin: 24px auto; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius); padding: 26px; box-shadow: var(--shadow); }
+.post h1 { font-size: 1.7rem; margin: 0 0 10px; }
+.post-meta { color: var(--muted); font-size: 0.85rem; margin-bottom: 18px; display: flex; gap: 12px; flex-wrap: wrap; }
+.post-meta .badge { background: #fdeef1; }
+.post-cover { width: 100%; border-radius: 10px; margin-bottom: 18px; }
+.post-content h2 { margin-top: 1.6em; font-size: 1.25rem; }
+.post-content h3 { margin-top: 1.3em; }
+.post-content img { border-radius: 10px; margin: 14px 0; }
+.post-content pre { background: #2d2a2e; color: #fff; padding: 14px; border-radius: 8px; overflow: auto; }
+.pin-share { margin: 18px 0; text-align: center; }
+
+/* ---------------- Ad slots ---------------- */
+.ad-slot {
+  margin: 22px 0; text-align: center; min-height: 90px;
+  background: #fdf4f6; border: 1px dashed var(--border); border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 0.78rem;
+}
+.ad-slot.inline { margin: 26px auto; max-width: 336px; }
+.ad-label { font-size: 0.66rem; letter-spacing: 1px; text-transform: uppercase; color: #c9b8b8; }
+
+/* ---------------- Forms (submit / dmca / contact) ---------------- */
+.form-wrap { max-width: 680px; margin: 24px auto; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius); padding: 26px; box-shadow: var(--shadow); }
+.form-wrap label { display: block; font-weight: 600; margin: 14px 0 6px; font-size: 0.9rem; }
+.form-wrap input, .form-wrap textarea, .form-wrap select {
+  width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+  font: inherit; background: #fff; color: var(--text);
+}
+.form-wrap textarea { min-height: 160px; resize: vertical; }
+.form-wrap .hint { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+.btn {
+  display: inline-block; margin-top: 18px; padding: 11px 22px; border: 0; border-radius: 999px;
+  background: var(--primary); color: #fff; font-weight: 700; cursor: pointer; font-size: 0.95rem;
+}
+.btn:hover { background: var(--primary-dark); }
+.form-note { background: #fdeef1; border-radius: 8px; padding: 12px 14px; font-size: 0.85rem; color: var(--primary-dark); }
+
+/* ---------------- Pagination ---------------- */
+.pagination { display: flex; justify-content: center; gap: 10px; margin: 30px 0; flex-wrap: wrap; }
+.pagination a, .pagination span { padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.pagination .current { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+/* ---------------- Taxonomy ---------------- */
+.taxonomy-cloud { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0; }
+.taxonomy-cloud a { padding: 6px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; font-size: 0.88rem; }
+.taxonomy-cloud a:hover { border-color: var(--primary); text-decoration: none; }
+
+/* ---------------- Footer ---------------- */
+.site-footer { margin-top: 50px; border-top: 1px solid var(--border); background: var(--surface); }
+.site-footer .container { padding: 30px 16px; }
+.footer-links { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin-bottom: 14px; }
+.footer-links a { color: var(--muted); font-size: 0.86rem; }
+.footer-links a:hover { color: var(--primary); }
+.copyright { text-align: center; color: var(--muted); font-size: 0.82rem; }
+
+/* ---------------- Legal pages ---------------- */
+.legal { max-width: 760px; margin: 24px auto; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius); padding: 30px; box-shadow: var(--shadow); }
+.legal h1 { font-size: 1.6rem; margin-top: 0; }
+.legal h2 { font-size: 1.15rem; margin-top: 1.6em; }
+.legal p, .legal li { color: #444; }
+
+/* ---------------- Mobile nav ---------------- */
+@media (max-width: 720px) {
+  .main-nav { display: none; position: absolute; top: 60px; left: 0; right: 0;
+    background: #fff; border-bottom: 1px solid var(--border); flex-direction: column; padding: 12px 16px; gap: 10px; }
+  .main-nav.open { display: flex; }
+  .nav-toggle { display: block; }
+}
