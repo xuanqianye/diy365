@@ -9,10 +9,11 @@ description: "Free pattern by @craftyEmmi ⬇️ ⬇️⬇️ From the pattern c
   #crochetmatryoshka #freeamigurumipattern #sunflower  Free Amigurumi Sunflower
   Matryoshka Doll"
 slug: sunflower-matryoshka-doll
-date: 2026-11-12
 draft: false
-categories: []
-tags: []
+categories:
+  - Amigurumi
+tags:
+  - Amigurumi
 difficulty: Easy
 cover:
   - https://pic1.imgdd.cc/i/034wH8AQ0UyqQK5RbN2uU6.webp
@@ -22,4 +23,5 @@ pinImage:
   - https://pic1.imgdd.cc/i/034wH8wg9s1y5cjFzSqiYl.webp
   - https://pic1.imgdd.cc/i/034wH8yLOKZ4AIvc12IJQI.webp
 author: ""
+date: 2026-11-12
 ---
