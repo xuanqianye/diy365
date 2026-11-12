@@ -4,8 +4,10 @@
 
 # Custom media library: upload images DIRECTLY to Superbed from the browser.
 # Superbed blocks datacenter IPs / non-browser requests, so a server proxy won't work;
-# the editor's own browser uploads instead. The X-API-Key is necessarily public here
-# (Decap runs in the browser) — same key PicGo/ShareX use. Keep quota low / rotate if abused.
+# the editor's own browser uploads instead. The token (apiKey) is necessarily public here
+# (Decap runs in the browser) — same key PicGo/ShareX use. It is sent as a multipart
+# FORM FIELD `token` (NOT an X-API-Key header — that returns "Missing API key"). Keep
+# quota low / rotate if abused.
 media_library:
   name: superbed
   config:

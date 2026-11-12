@@ -6,10 +6,14 @@
  *   is allowed, so we upload straight from the client.
  *
  * Security note:
- *   The X-API-Key below is read from config.yml (media_library.config.apiKey) and is
+ *   The token below is read from config.yml (media_library.config.apiKey) and is
  *   necessarily PUBLIC here — Decap CMS runs entirely in the browser. This is the same
  *   key PicGo/ShareX use for Superbed, so it matches intended use. To limit abuse, keep
  *   your Superbed upload quota low and rotate the key if needed.
+ *
+ *   AUTH NOTE: Superbed authenticates via the `token` MULTIPART FORM FIELD, NOT the
+ *   `X-API-Key` header. The header method returns "Missing API key" (verified), so we
+ *   append `token` to the FormData. This matches the official PicGo/ShareX config.
  *
  * IMPORTANT: Decap 3.x registerMediaLibrary expects the LIBRARY OBJECT as the first arg
  * (not a string name), and init() receives `handleInsert` (not `handleMediaUpload`).
@@ -38,7 +42,7 @@
         box.innerHTML =
           '<h3 style="margin:0 0 6px;font-size:18px;">Upload to Superbed</h3>' +
           '<p style="margin:0 0 14px;color:#666;font-size:13px;">Images are stored on the Superbed CDN; the returned URL is inserted into your field.</p>' +
-          '<input type="file" accept="image/*" multiple style="display:block;width:100%;margin-bottom:12px;">' +
+          '<input type="file" accept="image/*,.pdf" multiple style="display:block;width:100%;margin-bottom:12px;">' +
           '<div class="sb-status" style="margin-bottom:14px;color:#555;font-size:13px;min-height:18px;"></div>' +
           '<div style="display:flex;gap:10px;justify-content:flex-end;">' +
             '<button class="sb-cancel" style="padding:9px 16px;cursor:pointer;border:1px solid #ccc;background:#fff;border-radius:6px;">Cancel</button>' +
@@ -75,14 +79,26 @@
             var file = files[i];
             status.textContent = 'Uploading ' + (i + 1) + '/' + files.length + ': ' + file.name;
             var fd = new FormData();
-            fd.append('file', file, file.name || ('image' + i + '.jpg'));
-            var headers = {};
-            if (apiKey) headers['X-API-Key'] = apiKey;
-            fetch(endpoint, { method: 'POST', headers: headers, body: fd })
-              .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+            fd.append('file', file, file.name || ('file' + i));
+            // Superbed auth = `token` MULTIPART FORM FIELD (NOT X-API-Key header — that
+            // returns "Missing API key"). Same as the official PicGo/ShareX config.
+            if (apiKey) fd.append('token', apiKey);
+            fd.append('categories', 'diy365'); // album on superbed (auto-created)
+            fetch(endpoint, { method: 'POST', body: fd })
+              .then(function (r) {
+                return r.text().then(function (txt) {
+                  var d = null;
+                  try { d = JSON.parse(txt); } catch (e) { d = { _raw: txt }; }
+                  return { ok: r.ok, status: r.status, d: d, txt: txt };
+                });
+              })
               .then(function (res) {
-                var url = res.d && (res.d.url || (res.d.data && res.d.data.url) || res.d.src);
-                if (!res.ok || !url) throw new Error((res.d && (res.d.error || res.d.msg)) || ('HTTP ' + (res.ok ? 200 : 'err')));
+                var d = res.d || {};
+                var url = d.url || (d.data && d.data.url) || d.src || (d.data && d.data.src);
+                if (!res.ok || !url || (typeof d.err !== 'undefined' && d.err !== 0)) {
+                  var msg = d.error || d.msg || d.message || (typeof d.err !== 'undefined' ? ('err=' + d.err) : '') || res.txt || ('HTTP ' + (res.status || 'err'));
+                  throw new Error(msg);
+                }
                 results.push({ id: url, name: file.name, url: url });
                 i++; next();
               })
