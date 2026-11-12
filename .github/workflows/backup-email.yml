@@ -1,0 +1,83 @@
+# ============================================================
+# Optional CLOUD-ONLY backup email: no server, no PC switched on.
+#
+# Cloudflare Workers cannot open SMTP ports (25/465/587), so the mail step
+# runs on a GitHub Actions runner. To enable it:
+#   1) Add repository Secrets (Settings -> Secrets and variables -> Actions):
+#        QQ_SMTP_USER   sender QQ Mail address
+#        QQ_SMTP_PASS   QQ Mail SMTP/IMAP authorization code (not the password)
+#        QQ_SMTP_TO     recipient (optional; defaults to QQ_SMTP_USER)
+#   2) Uncomment the `schedule` block below (cron 01:00 UTC = 09:00 Beijing).
+#   3) Manually run this workflow once to verify the mail arrives.
+#
+# NOTE: a local WorkBuddy automation already sends the same backup each day.
+# Enabling BOTH schedules would deliver two identical mails per day - pick one.
+# The subject contains "图解笔记备份" so the QQ Mail rule auto-files it.
+# ============================================================
+name: DIY365 backup email
+
+on:
+  workflow_dispatch:
+  # schedule:
+  #   - cron: '0 1 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  backup-mail:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Pack repository snapshot
+        run: |
+          DAY=$(date +%F)
+          zip -q -r "diy365-backup-${DAY}.zip" . \
+            -x '.git/*' 'public/*' 'resources/*' 'hugo' '_direct_upload_public.zip'
+          echo "BACKUP_FILE=diy365-backup-${DAY}.zip" >> "$GITHUB_ENV"
+          ls -lh "$BACKUP_FILE"
+
+      - name: Email the backup
+        env:
+          QQ_USER: ${{ secrets.QQ_SMTP_USER }}
+          QQ_PASS: ${{ secrets.QQ_SMTP_PASS }}
+          QQ_TO: ${{ secrets.QQ_SMTP_TO }}
+        run: |
+          python - <<'PY'
+          import os, smtplib, ssl
+          from email.header import Header
+          from email.mime.application import MIMEApplication
+          from email.mime.multipart import MIMEMultipart
+          from email.mime.text import MIMEText
+          from email.utils import formataddr, formatdate
+          from datetime import datetime, timezone, timedelta
+
+          user = os.environ['QQ_USER']
+          code = os.environ['QQ_PASS']
+          to = os.environ.get('QQ_TO') or user
+          path = os.environ['BACKUP_FILE']
+          day = datetime.now(timezone(timedelta(hours=8))).strftime('%Y-%m-%d')
+          subject = f'【图解笔记备份】DIY365 站点备份 {day}'
+
+          msg = MIMEMultipart()
+          msg['From'] = formataddr(('DIY365 Backup', user))
+          msg['To'] = to
+          msg['Subject'] = Header(subject, 'utf-8')
+          msg['Date'] = formatdate(localtime=True)
+          msg.attach(MIMEText(
+              f'DIY365 cloud backup {day}\ncommit: {os.environ.get("GITHUB_SHA", "")[:8]}\n',
+              'plain', 'utf-8'))
+          with open(path, 'rb') as f:
+              part = MIMEApplication(f.read(), _subtype='zip')
+          part.add_header('Content-Disposition', 'attachment', filename=os.path.basename(path))
+          msg.attach(part)
+
+          with smtplib.SMTP_SSL('smtp.qq.com', 465,
+                               context=ssl.create_default_context(), timeout=30) as s:
+              s.login(user, code)
+              s.sendmail(user, [to], msg.as_string())
+          print('Backup email sent:', subject)
+          PY
