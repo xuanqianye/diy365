@@ -1,7 +1,7 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://www.diy365.cc/sitemap.xml
+Sitemap: https://diy365.cc/sitemap.xml
 
 # --- EU AI / search opt-out signals (content-signals) ---
 # Block common AI training crawlers from ingesting our original patterns.
