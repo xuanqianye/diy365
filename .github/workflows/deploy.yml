@@ -57,7 +57,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages project create diy365 --branch=main --yes
+          command: pages project create diy365 --production-branch=main --yes
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v4
