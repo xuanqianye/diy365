@@ -33,27 +33,29 @@ collections:
     create: true
     slug: "{{slug}}"
     fields:
-      - { name: title, label: Title, widget: string }
-      - { name: description, label: Description, widget: string }
-      - { name: draft, label: "Draft (unpublished)", widget: boolean, default: false }
+      - { name: title, label: Title, widget: string, required: false }
+      - { name: description, label: Description, widget: string, required: false }
+      - { name: draft, label: "Draft (unpublished)", widget: boolean, default: false, required: false }
       - name: categories
         label: Category
         widget: list
-        field: { name: category, label: Category, widget: string }
+        required: false
+        field: { name: category, label: Category, widget: string, required: false }
       - name: tags
         label: Tags
         widget: list
-        field: { name: tag, label: Tag, widget: string }
-      - { name: difficulty, label: Difficulty, widget: select, options: [Easy, Intermediate, Advanced], default: Easy }
-      - { name: yarn, label: Yarn, widget: string }
-      - { name: hook, label: Hook, widget: string }
-      - { name: size, label: Size, widget: string }
-      - { name: pdf, label: "PDF URL (superbed)", widget: file }
-      - { name: cover, label: "Cover Image URL (superbed)", widget: image }
-      - { name: pinImage, label: "Pinterest Vertical Image URL (superbed)", widget: image }
-      - { name: author, label: Author, widget: string, default: "DIY365" }
-      - { name: submittedBy, label: Submitted By, widget: string }
-      - { name: body, label: "Pattern Steps (Markdown)", widget: markdown }
+        required: false
+        field: { name: tag, label: Tag, widget: string, required: false }
+      - { name: difficulty, label: Difficulty, widget: select, options: [Easy, Intermediate, Advanced], default: Easy, required: false }
+      - { name: yarn, label: Yarn, widget: string, required: false }
+      - { name: hook, label: Hook, widget: string, required: false }
+      - { name: size, label: Size, widget: string, required: false }
+      - { name: pdf, label: "PDF URL (superbed)", widget: file, required: false }
+      - { name: cover, label: "Cover Image URL (superbed)", widget: image, required: false }
+      - { name: pinImage, label: "Pinterest Vertical Image URL (superbed)", widget: image, required: false }
+      - { name: author, label: Author, widget: string, default: "DIY365", required: false }
+      - { name: submittedBy, label: Submitted By, widget: string, required: false }
+      - { name: body, label: "Pattern Steps (Markdown)", widget: markdown, required: false }
 
   - name: "pages"
     label: "Legal & Info Pages"
