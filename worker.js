@@ -20,12 +20,21 @@ export default {
         }
         const fd = new FormData();
         fd.append('file', file, file.name || 'image.jpg');
-        fd.append('token', env.SUPERBED_TOKEN || '');
 
-        const upstream = await fetch('https://api.superbed.cn/upload', {
-          method: 'POST',
-          body: fd,
-        });
+        // Superbed authenticates via the X-API-Key header (not a form field).
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 20000);
+        let upstream;
+        try {
+          upstream = await fetch('https://api.superbed.cn/upload', {
+            method: 'POST',
+            headers: { 'X-API-Key': env.SUPERBED_TOKEN || '' },
+            body: fd,
+            signal: controller.signal,
+          });
+        } finally {
+          clearTimeout(timer);
+        }
         const text = await upstream.text();
 
         let urlOut = null;
