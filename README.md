@@ -50,17 +50,17 @@ hugo server -D        # -D 包含草稿（draft:true 的投稿）
 
 **两种方式任选其一：**
 
-**A-1. 仪表盘直连 Git（最省事，且自动启用 Pages Functions）**
-1. 把本项目推到 GitHub。
-2. Cloudflare Pages 新建项目 → 连接 GitHub 仓库 → Framework: Hugo → Build: `hugo --minify --gc` → 输出 `public`。
-3. 域名 diy365.cc 的 DNS 接入 Cloudflare，添加 CNAME 指向 Pages。
-4. 环境变量（Pages → Settings → Environment variables）：`GH_TOKEN` / `GH_REPO` / `GH_BRANCH`（投稿后端回写 GitHub 用）。
+**A-1. 仪表盘直连 Git（推荐 · 零密钥 · 自动启用 Pages Functions）**
+1. 把本项目推到 GitHub（见下方「上线 runbook」）。
+2. Cloudflare Pages 新建项目 → **连接 GitHub 仓库** → Framework: Hugo → Build: `hugo --minify --gc` → 输出 `public`。
+3. 自定义域：项目设置 → Custom domains → 加 `diy365.cc` + `www.diy365.cc`（Cloudflare 自动加 DNS + 证书，并把旧的 A 记录 38.92.9.43 改成指向 Pages）。
+4. 环境变量（Pages → Settings → Environment variables）：`GH_TOKEN` / `GH_REPO` / `GH_BRANCH`（投稿后端回写 GitHub 用，不填则表单提交回写失败）。
 5. 表单提交指向 `/submit`（Cloudflare 自动路由到根目录 `functions/submit.js`）。
+> 选 A-1 时**无需**配置任何 Cloudflare API Token / Actions Secret，Cloudflare 在每次 push 时自动构建上线。
 
-**A-2. GitHub Actions 自动部署（git push 即上线，可切换）**
-- 已内置 `.github/workflows/deploy.yml`：push 到 `main` 自动用 Hugo 构建并部署到 Cloudflare Pages（含 `functions/` 一并打包）。
-- 需在本仓库 **Settings → Secrets** 配置：`CLOUDFLARE_API_TOKEN`（Pages:Edit 权限）、`CLOUDFLARE_ACCOUNT_ID`。
-- 之后每次 `git push` 自动上线，无需手动连仪表盘。
+**A-2. GitHub Actions 直接调 Cloudflare API 部署（可选 · 手动触发）**
+- 已内置 `.github/workflows/deploy.yml`，但默认**仅 `workflow_dispatch` 手动触发**，不会监听 push（避免与 A-1 重复部署）。
+- 仅当你不想用 A-1 的 Git 集成时，才需要在仓库 **Settings → Secrets** 配置 `CLOUDFLARE_API_TOKEN`（Pages:Edit 权限）、`CLOUDFLARE_ACCOUNT_ID`，然后到 Actions 页面手动 Run workflow。
 
 > 注：`hugo.toml` 的 `params.submitEndpoint` 默认已设为 `/submit`（Cloudflare 路由）。
 > 切换到 Netlify 时改成 `/.netlify/functions/submit`。
