@@ -1,0 +1,11 @@
+# Legacy long permalinks -> short slugs (301).
+# Cloudflare Workers Static Assets parses this file from the build output root.
+# The Burcu Bulbul URL contains "ü": keep both the percent-encoded form (what a
+# browser actually sends) and the decoded UTF-8 form so either match works.
+
+/patterns/mavi-crochet-doll-pattern-by-burcu-b%C3%BClb%C3%BCl-with-blue-coat-and-snowman-accessory/ /patterns/mavi-crochet-doll/ 301
+/patterns/mavi-crochet-doll-pattern-by-burcu-b%C3%BClb%C3%BCl-with-blue-coat-and-snowman-accessory /patterns/mavi-crochet-doll/ 301
+/patterns/mavi-crochet-doll-pattern-by-burcu-bülbül-with-blue-coat-and-snowman-accessory/ /patterns/mavi-crochet-doll/ 301
+/patterns/mavi-crochet-doll-pattern-by-burcu-bülbül-with-blue-coat-and-snowman-accessory /patterns/mavi-crochet-doll/ 301
+/patterns/free-amigurumi-sunflower-matryoshka-doll-crochet-pattern-by-emmi-hai-with-detailed-instructions-and-color-guide/ /patterns/sunflower-matryoshka-doll/ 301
+/patterns/free-amigurumi-sunflower-matryoshka-doll-crochet-pattern-by-emmi-hai-with-detailed-instructions-and-color-guide /patterns/sunflower-matryoshka-doll/ 301

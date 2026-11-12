@@ -39,6 +39,11 @@ collections:
     fields:
       - { name: title, label: 标题, widget: string, required: false }
       - { name: description, label: 描述, widget: string, required: false }
+      # 自定义短链接：Hugo 会用 front matter 的 slug 覆盖「文件名」那段 URL。
+      # 留空则退回标题自动生成的长链接。填 2~4 个英文词即可，例如 mavi-crochet-doll。
+      - { name: slug, label: "自定义短链接（留空则用标题）", widget: string, required: false,
+          hint: "只填小写英文字母、数字和连字符，例如 mavi-crochet-doll。改短后旧链接会自动跳转，已分享出去的链接建议不要再改。",
+          pattern: ['^$|^[a-z0-9]+(-[a-z0-9]+)*$', '只能用小写字母、数字和连字符，例如 mavi-crochet-doll'] }
       - { name: draft, label: "草稿（不发布）", widget: boolean, default: false, required: false }
       - name: categories
         label: 分类

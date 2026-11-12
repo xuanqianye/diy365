@@ -8,6 +8,7 @@ description: "Free pattern by @craftyEmmi ⬇️ ⬇️⬇️ From the pattern c
   to see your makes. Happy crocheting! ♥️ #amigurumi #crocheting
   #crochetmatryoshka #freeamigurumipattern #sunflower  Free Amigurumi Sunflower
   Matryoshka Doll"
+slug: sunflower-matryoshka-doll
 draft: false
 categories: []
 tags: []
