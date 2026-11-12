@@ -2,6 +2,7 @@
 title: "Contact Us"
 description: "Get in touch with the Handmade team."
 pagetype: form
+url: "/contact/"
 ---
 
 We are glad to hear from you. Please choose the right channel so your message reaches the right place.

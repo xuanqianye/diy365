@@ -2,6 +2,7 @@
 title: "Disclaimer"
 description: "Disclaimers for Handmade."
 pagetype: legal
+url: "/disclaimer/"
 ---
 
 ## Content accuracy

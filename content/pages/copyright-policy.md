@@ -2,6 +2,7 @@
 title: "Copyright Policy"
 description: "DIY365's policy on copyrighted material."
 pagetype: legal
+url: "/copyright-policy/"
 ---
 ## Copyright Policy
 

@@ -20,4 +20,9 @@
 {{ if and $pub (not (findRE "0{10,}" $pub)) }}
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ $pub }}" crossorigin="anonymous"></script>
 {{ end }}
+
+<!-- 51.la 网站统计 -->
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id:"3RkAwKLdBIfgtD2C",ck:"3RkAwKLdBIfgtD2C"})</script>
+
 {{ partial "seo-schema.html" . }}

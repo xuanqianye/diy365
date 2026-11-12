@@ -2,6 +2,7 @@
 title: "User Agreement"
 description: "Agreement for users who submit patterns to Handmade."
 pagetype: legal
+url: "/agreement/"
 ---
 
 This User Agreement governs your use of **Handmade**. By registering, publishing or otherwise using the site you agree to these terms and to our [Terms of Service](/terms) and [Privacy Policy](/privacy).

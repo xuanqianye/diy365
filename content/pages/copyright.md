@@ -2,6 +2,7 @@
 title: "Copyright Policy"
 description: "Handmade's policy on copyrighted material."
 pagetype: legal
+url: "/copyright/"
 ---
 
 **Handmade** respects the intellectual property rights of designers, photographers and publishers. All patterns, charts, photographs and text remain the property of their respective owners. Uploading content to this site does not transfer ownership to us.

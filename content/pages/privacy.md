@@ -2,6 +2,7 @@
 title: "Privacy Policy"
 description: "How Handmade collects, uses and protects your information."
 pagetype: legal
+url: "/privacy/"
 ---
 
 This Privacy Policy explains what information **Handmade** ("we", "us") collects, how we use it, and the choices you have. It applies to https://diy365.cc and all pages on this domain.

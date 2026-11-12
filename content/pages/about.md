@@ -2,6 +2,7 @@
 title: "About Us"
 description: "About Handmade — free crochet patterns shared by the community."
 pagetype: legal
+url: "/about/"
 ---
 
 **Handmade** is a community website for people who love crochet, knitting and handmade crafts. Our goal is to make it easy to discover, share and archive free patterns, project notes and inspiration from makers around the world.

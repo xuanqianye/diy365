@@ -2,6 +2,7 @@
 title: "User Agreement"
 description: "Agreement for users who submit patterns to DIY365."
 pagetype: legal
+url: "/user-agreement/"
 ---
 ## User Agreement
 

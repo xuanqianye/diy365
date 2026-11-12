@@ -2,6 +2,7 @@
 title: "Copyright Removal Request"
 description: "Submit a DMCA takedown request to DIY365."
 pagetype: form
+url: "/copyright-removal/"
 ---
 ## Copyright Removal Request
 

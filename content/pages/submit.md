@@ -2,6 +2,7 @@
 title: "Submit a Pattern"
 description: "Share your free crochet pattern with the DIY365 community. No registration required."
 pagetype: form
+url: "/submit/"
 ---
 ## Share Your Pattern
 

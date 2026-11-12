@@ -2,6 +2,7 @@
 title: "Copyright Removal Request"
 description: "Submit a DMCA takedown request to Handmade."
 pagetype: form
+url: "/dmca/"
 ---
 
 If you own the copyright to a pattern, chart, photograph or text published on this site and believe it was used without permission, please use the form below. We take copyright seriously: valid notices are reviewed and, where appropriate, the material is removed or disabled within **24–48 hours**, and a record of the request is kept.

@@ -2,6 +2,7 @@
 title: "Terms of Service"
 description: "Terms governing your use of Handmade."
 pagetype: legal
+url: "/terms/"
 ---
 
 Welcome to **Handmade** (https://diy365.cc). These Terms of Service ("Terms") are a binding agreement between you and us regarding your use of the website.
