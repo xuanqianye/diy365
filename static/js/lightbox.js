@@ -8,6 +8,7 @@
   var currentIndex = 0;
   var zoom = 1, posX = 0, posY = 0;
   var dragging = false, startX = 0, startY = 0, startPosX = 0, startPosY = 0;
+  var touchMode = 'none', pinchStartDist = 0, pinchStartZoom = 1;
 
   var SELECTOR = '.post-cover, .pattern-step, .post-content img';
 
@@ -55,7 +56,9 @@
     imgEl.addEventListener('dblclick', function (e) { e.stopPropagation(); setZoom(zoom > 1 ? 1 : 2); });
 
     imgEl.addEventListener('mousedown', startDrag);
-    imgEl.addEventListener('touchstart', startDrag, { passive: false });
+    imgEl.addEventListener('touchstart', onTouchStart, { passive: false });
+    imgEl.addEventListener('touchmove', onTouchMove, { passive: false });
+    imgEl.addEventListener('touchend', onTouchEnd);
     document.addEventListener('mousemove', onDrag);
     document.addEventListener('touchmove', onDrag, { passive: false });
     document.addEventListener('mouseup', endDrag);
@@ -98,10 +101,11 @@
   function resetZoom() { posX = 0; posY = 0; setZoom(1); }
 
   function startDrag(e) {
+    // mouse-only pan start; touch is handled by onTouchStart
     if (zoom <= 1) return;
-    dragging = true;
     var p = point(e);
     startX = p.x; startY = p.y; startPosX = posX; startPosY = posY;
+    dragging = true;
     imgEl.style.cursor = 'grabbing';
   }
   function onDrag(e) {
@@ -113,6 +117,63 @@
     imgEl.style.transform = 'translate(' + posX + 'px,' + posY + 'px) scale(' + zoom + ')';
   }
   function endDrag() { dragging = false; imgEl.style.cursor = 'grab'; }
+
+  function touchDist(e) {
+    var a = e.touches[0], b = e.touches[1];
+    return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+  }
+  function onTouchStart(e) {
+    if (e.touches.length >= 2) {
+      touchMode = 'pinch';
+      dragging = false;
+      pinchStartDist = touchDist(e);
+      pinchStartZoom = zoom;
+      e.preventDefault();
+      return;
+    }
+    var p = point(e);
+    startX = p.x; startY = p.y; startPosX = posX; startPosY = posY;
+    if (zoom > 1) { touchMode = 'pan'; dragging = true; imgEl.style.cursor = 'grabbing'; }
+    else { touchMode = 'swipe'; }
+  }
+  function onTouchMove(e) {
+    if (touchMode === 'pinch' && e.touches.length >= 2) {
+      var d = touchDist(e);
+      if (pinchStartDist > 0) setZoom(pinchStartZoom * (d / pinchStartDist));
+      e.preventDefault();
+      return;
+    }
+    if (touchMode === 'pan' && dragging) { onDrag(e); return; }
+    if (touchMode === 'swipe' && zoom <= 1) {
+      var p = point(e);
+      var dx = p.x - startX, dy = p.y - startY;
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 8) e.preventDefault();
+    }
+  }
+  function onTouchEnd(e) {
+    if (touchMode === 'pinch') {
+      if (e.touches && e.touches.length === 1) {
+        touchMode = (zoom > 1) ? 'pan' : 'swipe';
+        var p = point(e);
+        startX = p.x; startY = p.y; startPosX = posX; startPosY = posY;
+        dragging = (zoom > 1);
+      } else {
+        touchMode = 'none';
+      }
+      return;
+    }
+    if (touchMode === 'pan' && dragging) {
+      dragging = false; imgEl.style.cursor = 'grab'; touchMode = 'none';
+      return;
+    }
+    if (touchMode === 'swipe') {
+      touchMode = 'none';
+      var t = (e.changedTouches && e.changedTouches[0]);
+      if (!t) return;
+      var dx = t.clientX - startX, dy = t.clientY - startY;
+      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) show(currentIndex + (dx < 0 ? 1 : -1));
+    }
+  }
   function point(e) {
     if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
     return { x: e.clientX, y: e.clientY };
