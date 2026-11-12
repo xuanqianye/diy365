@@ -1,0 +1,9 @@
+# Cloudflare Pages 部署专用配置（仅被 .github/workflows/deploy.yml 引用）
+# 与根目录 wrangler.toml（Workers Static Assets 配置）互不干扰：
+#   - wrangler.toml      → 手动 `wrangler deploy`（Workers 主站，含 [assets]）
+#   - wrangler.pages.toml → GitHub Actions 的 `wrangler pages deploy`（本文件）
+# 这样两个部署路径各自用各自的配置，避免 [assets] 与 Pages 冲突。
+
+name = "diy365"
+account_id = "3a4f3c51777bd916bb80e202947bd84e"
+pages_build_output_dir = "public"

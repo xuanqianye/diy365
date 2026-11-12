@@ -52,5 +52,5 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy public --project-name=diy365
+          command: pages deploy --project-name=diy365 --branch=main --config wrangler.pages.toml
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
