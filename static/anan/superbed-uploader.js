@@ -34,7 +34,7 @@
       var apiKey = (options.config && options.config.apiKey) || '';
       var overlay = null;
 
-      function open(close) {
+      function open(close, allowMultiple) {
         overlay = document.createElement('div');
         overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2147483000;display:flex;align-items:center;justify-content:center;';
         var box = document.createElement('div');
@@ -42,7 +42,7 @@
         box.innerHTML =
           '<h3 style="margin:0 0 6px;font-size:18px;">Upload to Superbed</h3>' +
           '<p style="margin:0 0 14px;color:#666;font-size:13px;">Images are stored on the Superbed CDN; the returned URL is inserted into your field.</p>' +
-          '<input type="file" accept="image/*,.pdf" multiple style="display:block;width:100%;margin-bottom:12px;">' +
+          '<input type="file" accept="image/*,.pdf" style="display:block;width:100%;margin-bottom:12px;">' +
           '<div class="sb-status" style="margin-bottom:14px;color:#555;font-size:13px;min-height:18px;"></div>' +
           '<div style="display:flex;gap:10px;justify-content:flex-end;">' +
             '<button class="sb-cancel" style="padding:9px 16px;cursor:pointer;border:1px solid #ccc;background:#fff;border-radius:6px;">Cancel</button>' +
@@ -52,6 +52,9 @@
         document.body.appendChild(overlay);
 
         var input = box.querySelector('input[type=file]');
+        // A single-value image/file field must receive ONE url string; only list-like
+        // fields (allowMultiple) may receive an array. Match the picker accordingly.
+        input.multiple = !!allowMultiple;
         var status = box.querySelector('.sb-status');
         var uploadBtn = box.querySelector('.sb-upload');
         var cancelBtn = box.querySelector('.sb-cancel');
@@ -72,7 +75,16 @@
           function next() {
             if (i >= files.length) {
               status.textContent = 'Done — inserting ' + results.length + ' image(s).';
-              try { if (typeof handleInsert === 'function') handleInsert(results); } catch (e) { console.error(e); }
+              // CRITICAL (verified in decap-cms bundle):
+              //  - handleInsert expects ABSOLUTE URL STRING(S), not {id,url} objects.
+              //    The media-path normalizer a_() returns absolute URLs as-is (xh() regex
+              //    /^(?:[a-z]+:)?\/\/|^\//), but for objects it extracts a path and
+              //    PREPENDS public_folder -> "/uploads/https://..." -> broken preview.
+              //  - The xy reducer stores mediaPath verbatim for single-value fields, so
+              //    a single-value image/file field needs ONE STRING, not an array.
+              //    Only allowMultiple fields take an array (official Uploadcare behavior).
+              var urls = results.map(function (r) { return r.url; });
+              try { if (typeof handleInsert === 'function') handleInsert(allowMultiple ? urls : urls[0]); } catch (e) { console.error(e); }
               setTimeout(closeModal, 500);
               return;
             }
@@ -114,7 +126,8 @@
       return {
         show: function (showArgs) {
           var close = showArgs && showArgs.close;
-          open(close);
+          var allowMultiple = !!(showArgs && showArgs.allowMultiple);
+          open(close, allowMultiple);
         },
         hide: function () {
           if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
