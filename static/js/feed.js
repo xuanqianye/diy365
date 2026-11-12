@@ -1,8 +1,8 @@
 /* ============================================================
-   瀑布流加载模式：一直加载（滚动自动追加） / 页码显示
-   每页 20 / 30 / 50 条，选择记在 localStorage。
-   数据来自 Hugo 生成的分片 JSON；服务端首屏卡片保留作 SEO 兜底，
-   JS 加载失败时页面仍有内容。
+   Feed loading modes: infinite scroll / pagination.
+   20 / 30 / 50 items per page, preference saved in localStorage.
+   Data comes from Hugo-generated JSON chunks; the server-rendered first
+   screen of cards is kept as an SEO / no-JS fallback.
    ============================================================ */
 (function () {
   'use strict';
@@ -17,7 +17,7 @@
   var tax = ctl.getAttribute('data-taxonomy') || '';
   var term = ctl.getAttribute('data-term') || '';
 
-  // 分类/标签页：模板没传筛选条件时从 URL 推断
+  // Taxonomy pages: infer the filter from the URL when the template does not pass it
   if (!tax) {
     var m = location.pathname.match(/^\/(categories|tags)\/([^/]+)/);
     if (m) { tax = m[1]; term = decodeURIComponent(m[2]); }
@@ -97,8 +97,8 @@
       cursor = list.length;
       var done = loaded >= (manifest ? manifest.chunks : 0);
       extras('<div class="feed-sentinel" id="feedSentinel">' +
-        (done ? '已加载全部 · 共 ' + pool.length + ' 篇'
-              : '<button type="button" class="feed-loadmore" id="feedMore">加载更多 ↓</button>') +
+        (done ? 'All loaded | ' + pool.length + ' patterns'
+              : '<button type="button" class="feed-loadmore" id="feedMore">Load more ↓</button>') +
         '</div>');
       var btn = document.getElementById('feedMore');
       if (btn) btn.addEventListener('click', function () {
@@ -115,7 +115,7 @@
         }, { rootMargin: '320px' });
         io.observe(document.getElementById('feedSentinel'));
       }
-      info.textContent = '已显示 ' + cursor + ' / ' + pool.length + ' 篇';
+      info.textContent = 'Showing ' + cursor + ' of ' + pool.length;
     });
   }
 
@@ -130,7 +130,7 @@
       var totalPages = Math.max(1, Math.ceil(pool.length / s));
       var hasNext = loaded < (manifest ? manifest.chunks : 0) || page < totalPages;
       var html = '<div class="feed-pager"><button type="button" data-act="prev"' +
-        (page <= 1 ? ' disabled' : '') + '>上一页</button>';
+        (page <= 1 ? ' disabled' : '') + '>Previous</button>';
       var from = Math.max(1, page - 2), to = Math.min(totalPages, page + 2);
       for (var p = from; p <= to; p++) {
         html += (p === page)
@@ -138,7 +138,7 @@
           : '<button type="button" data-page="' + p + '">' + p + '</button>';
       }
       if (to < totalPages) html += '<span class="feed-ellipsis">…</span>';
-      html += '<button type="button" data-act="next"' + (hasNext ? '' : ' disabled') + '>下一页</button></div>';
+      html += '<button type="button" data-act="next"' + (hasNext ? '' : ' disabled') + '>Next</button></div>';
       var box = extras(html);
       box.addEventListener('click', function (e) {
         var b = e.target.closest ? e.target.closest('button') : null;
@@ -151,7 +151,7 @@
         scrollToGrid();
         renderPaged();
       });
-      info.textContent = '第 ' + page + ' 页 · 每页 ' + s + ' 条 · 共 ' + pool.length + ' 篇';
+      info.textContent = 'Page ' + page + ' | ' + s + ' per page | ' + pool.length + ' patterns';
     });
   }
 
@@ -169,7 +169,7 @@
     ls('diy365_feed_size', sizeEl.value); render(true);
   });
 
-  // 加载失败时不动 masonry，保留服务端渲染的首屏卡片
+  // On load failure leave the server-rendered first-screen cards untouched
   fetch('/data/feed/manifest.json', { cache: 'force-cache' })
     .then(function (r) { if (!r.ok) throw new Error('manifest'); return r.json(); })
     .then(function (m) { manifest = m; return render(false); })

@@ -1,4 +1,4 @@
-/* 列表加载模式控件 */
+/* Feed loading-mode controls */
 .feed-controls {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   margin: 18px 0 4px; padding: 10px 14px;

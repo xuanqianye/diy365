@@ -1,4 +1,4 @@
-/* /submit/ 图片上传区 */
+/* /submit/ image upload area */
 .sb-upload { margin: 14px 0 4px; }
 .sb-upload > .sb-label {
   display: block; font-weight: 600; font-size: .9rem; margin: 14px 0 6px;
@@ -37,7 +37,7 @@
 .sb-hint b { color: #b2845b; }
 .sb-count { color: var(--primary-dark); font-weight: 700; }
 
-/* 验证码 */
+/* Verification */
 .sb-captcha { margin: 18px 0 4px; }
 .sb-captcha-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .sb-captcha-img {

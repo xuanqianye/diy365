@@ -1,5 +1,5 @@
-{{- /* 首页构建时生成瀑布流分片 JSON（每片 500 条），供前端按需加载。
-       只在首页生成一次，其他页面直接引用 /data/feed/ 下的静态 URL。 */ -}}
+{{- /* Build the feed JSON chunks (500 items each) once on the home page.
+       Other pages reference the static files under /data/feed/. */ -}}
 {{- $pages := where .Site.RegularPages "Type" "patterns" -}}
 {{- $per := 500 -}}
 {{- $total := len $pages -}}

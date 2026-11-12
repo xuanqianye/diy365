@@ -22,27 +22,27 @@
   <label>Short Description</label>
   <textarea name="description" placeholder="One paragraph describing the pattern"></textarea>
   <div class="sb-upload" data-api="{{ $api }}">
-    <span class="sb-label">Pattern Images * <small>仅支持 JPG / PNG / WebP · 也可选 PDF（自动逐页转图） · JPG / PNG / WebP only</small></span>
-    <div class="sb-drop" id="sbDrop" role="button" tabindex="0" aria-label="选择或拖入图片">
+    <span class="sb-label">Pattern Images * <small>JPG / PNG / WebP only &middot; PDF files are converted to images page by page</small></span>
+    <div class="sb-drop" id="sbDrop" role="button" tabindex="0" aria-label="Choose or drop images">
       <div class="sb-drop-icon">⬆</div>
-      <strong>点击选择，或把图片拖到这里</strong>
-      <span><b>仅支持 jpg / png / webp</b> · 选 PDF 时会在浏览器内自动分段截取成图片再上传</span>
+      <strong>Click to choose images, or drag them here</strong>
+      <span><b>JPG / PNG / WebP only</b> &middot; PDF files are split into images in your browser before uploading</span>
     </div>
     <input type="file" id="sbFiles" accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf" multiple hidden>
     <div class="sb-status" id="sbStatus" role="status" aria-live="polite"></div>
     <div class="sb-list" id="sbList"></div>
     <textarea name="images" id="sbUrls" hidden></textarea>
-    <p class="sb-hint">已上传 <span class="sb-count" id="sbCount">0</span> 张。<b>第 1 张作为封面</b>，其余按上传顺序作为图解步骤图。图床不接收 PDF，PDF 会自动逐页（长页再分段）转成图片后上传。</p>
+    <p class="sb-hint"><span class="sb-count" id="sbCount">0</span> uploaded. <b>The first image is used as the cover</b>; the rest become step-by-step images in upload order. PDF files are not uploaded directly &mdash; each page (long pages are split into sections) is converted to an image first.</p>
   </div>
   <label>Pattern Steps (Markdown) *</label>
   <textarea name="steps" required placeholder="## Materials&#10;- ...&#10;## Pattern&#10;Round 1: MR 6sc (6)"></textarea>
   <input type="hidden" name="form_type" value="submission">
   <div class="sb-captcha">
-    <span class="sb-label">Verification * <small>请输入图中算式的结果，防止批量投稿 · Please solve the math below</small></span>
+    <span class="sb-label">Verification * <small>Please solve the math below &mdash; this helps prevent automated submissions</small></span>
     <div class="sb-captcha-row">
       <div class="sb-captcha-img" id="sbCaptchaSvg" aria-label="Verification image"></div>
-      <input name="captcha_answer" id="sbCaptchaAnswer" inputmode="numeric" autocomplete="off" placeholder="答案" required>
-      <button type="button" class="sb-captcha-refresh" id="sbCaptchaRefresh">换一题</button>
+      <input name="captcha_answer" id="sbCaptchaAnswer" inputmode="numeric" autocomplete="off" placeholder="Answer" required>
+      <button type="button" class="sb-captcha-refresh" id="sbCaptchaRefresh">New question</button>
     </div>
     <input type="hidden" name="captcha_token" id="sbCaptchaToken">
     <div class="sb-captcha-msg" id="sbCaptchaMsg"></div>

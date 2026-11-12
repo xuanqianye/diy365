@@ -25,13 +25,13 @@
 {{ with $ogImg }}<meta property="og:image" content="{{ . }}">{{ end }}
 <meta name="twitter:card" content="summary_large_image">
 
-<!-- AdSense: 仅在填入真实 Publisher ID 后注入（避免占位符报错） -->
+<!-- AdSense: injected only after a real Publisher ID is set (avoids placeholder errors) -->
 {{ $pub := .Site.Params.adsensePublisher }}
 {{ if and $pub (not (findRE "0{10,}" $pub)) }}
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ $pub }}" crossorigin="anonymous"></script>
 {{ end }}
 
-<!-- 51.la 网站统计 -->
+<!-- 51.la analytics -->
 <script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
 <script>LA.init({id:"3RkAwKLdBIfgtD2C",ck:"3RkAwKLdBIfgtD2C"})</script>
 

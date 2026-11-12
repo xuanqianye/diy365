@@ -1,7 +1,8 @@
 /* ============================================================
-   /submit/ 图片上传：直传 Superbed（仅 jpg/png/webp）
-   PDF 用 pdf.js 在浏览器内逐页渲染 → 长页自动分段 → 转成 webp/jpg 再上传。
-   图床不接受 PDF，所以任何 PDF 都不直接上传，一律先转图片。
+   /submit/ image upload: direct to Superbed (JPG / PNG / WebP only).
+   PDFs are rendered page by page with pdf.js, long pages are split into
+   sections, then converted to WebP/JPEG before upload. PDFs are never
+   uploaded directly because the image host does not support them.
    ============================================================ */
 (function () {
   'use strict';
@@ -15,11 +16,11 @@
   var MAX_PDF_PAGES = 30;
   var MAX_PDF_BYTES = 40 * 1024 * 1024;
   var MAX_CANVAS_W = 1500;
-  var SLICE_RATIO = 1.7;   // 每段高度 ≈ 宽度 × 1.7（长页切开）
-  var MAX_SLICES = 6;      // 单页最多切几段
+  var SLICE_RATIO = 1.7;   // each section height ~ width * 1.7 (splits long pages)
+  var MAX_SLICES = 6;      // max sections per page
 
   var zone, input, list, output, statusEl, countEl, form;
-  var items = [];          // 上传成功的图片 URL（有序）
+  var items = [];          // uploaded image URLs, in order
   var busy = false;
   var pdfjs = null;
 
@@ -53,8 +54,8 @@
       div.className = 'sb-item';
       div.innerHTML =
         '<img src="' + esc(url) + '" alt="" loading="lazy">' +
-        '<span class="sb-item-tag">' + (i === 0 ? '封面' : '图 ' + (i + 1)) + '</span>' +
-        '<button type="button" class="sb-item-del" aria-label="删除这张图">&times;</button>';
+        '<span class="sb-item-tag">' + (i === 0 ? 'Cover' : 'Image ' + (i + 1)) + '</span>' +
+        '<button type="button" class="sb-item-del" aria-label="Remove this image">&times;</button>';
       div.querySelector('.sb-item-del').addEventListener('click', function () {
         items.splice(i, 1);
         render();
@@ -63,9 +64,9 @@
     });
   }
 
-  /* ---------- 上传单张图片到 Superbed ---------- */
+  /* ---------- upload one image to Superbed ---------- */
   function uploadBlob(blob, name) {
-    setStatus('正在上传：' + name);
+    setStatus('Uploading: ' + name);
     var fd = new FormData();
     fd.append('file', blob, name);
     fd.append('token', TOKEN);
@@ -89,7 +90,7 @@
       });
   }
 
-  /* ---------- canvas → webp（不支持则 jpeg） ---------- */
+  /* ---------- canvas -> webp (jpeg fallback) ---------- */
   function canvasToImage(canvas) {
     return new Promise(function (resolve) {
       canvas.toBlob(function (b) {
@@ -103,7 +104,7 @@
 
   function loadPdfjs() {
     if (pdfjs) return Promise.resolve(pdfjs);
-    setStatus('正在加载 PDF 转换组件…');
+    setStatus('Loading PDF converter…');
     return import(PDF_LIB).then(function (mod) {
       mod.GlobalWorkerOptions.workerSrc = PDF_WORKER;
       pdfjs = mod;
@@ -111,10 +112,10 @@
     });
   }
 
-  /* ---------- PDF 逐页渲染 + 长页分段 ---------- */
+  /* ---------- render PDF page by page + split long pages ---------- */
   function convertPdf(file) {
     if (file.size > MAX_PDF_BYTES) {
-      return Promise.reject(new Error('PDF 超过 40MB，请先压缩：' + file.name));
+      return Promise.reject(new Error('PDF is larger than 40 MB. Please compress it first: ' + file.name));
     }
     return loadPdfjs().then(function (lib) {
       return file.arrayBuffer().then(function (buf) {
@@ -126,7 +127,7 @@
         for (var p = 1; p <= pages; p++) {
           (function (pageNo) {
             chain = chain.then(function () {
-              setStatus('PDF 转图中：第 ' + pageNo + ' / ' + doc.numPages + ' 页');
+              setStatus('Converting PDF: page ' + pageNo + ' of ' + doc.numPages);
               return doc.getPage(pageNo);
             }).then(function (page) {
               var vp = page.getViewport({ scale: 1.5 });
@@ -138,7 +139,7 @@
               return page.render({ canvasContext: c.getContext('2d'), viewport: vp2 }).promise
                 .then(function () { return c; });
             }).then(function (c) {
-              // 长页按高度切成多段，避免手机上一张图太长看不清
+              // split tall pages so a single image is readable on mobile
               var n = Math.min(Math.ceil(c.height / (c.width * SLICE_RATIO)), MAX_SLICES) || 1;
               var base = file.name.replace(/\.pdf$/i, '').replace(/[^\w\u4e00-\u9fa5-]+/g, '-').slice(0, 40);
               var seq = Promise.resolve();
@@ -165,14 +166,14 @@
         }
         return chain.then(function () {
           if (doc.numPages > MAX_PDF_PAGES) {
-            setStatus('PDF 共 ' + doc.numPages + ' 页，已转换前 ' + MAX_PDF_PAGES + ' 页', 'warn');
+            setStatus('PDF has ' + doc.numPages + ' pages; converted the first ' + MAX_PDF_PAGES, 'warn');
           }
         });
       });
     });
   }
 
-  /* ---------- 文件入口 ---------- */
+  /* ---------- file entry point ---------- */
   function handleFiles(files) {
     if (!files || !files.length || busy) return;
     busy = true;
@@ -181,20 +182,20 @@
       chain = chain.then(function () {
         if (isImage(f)) {
           if (f.size > MAX_IMG_BYTES) {
-            setStatus('图片超过 15MB，已跳过：' + f.name, 'warn');
+            setStatus('Image exceeds 15 MB, skipped: ' + f.name, 'warn');
             return;
           }
           return uploadBlob(f, f.name);
         }
         if (isPdf(f)) return convertPdf(f);
-        setStatus('不支持的格式：' + f.name + '（仅 jpg / png / webp，PDF 会自动转图）', 'err');
+        setStatus('Unsupported file type: ' + f.name + ' (JPG / PNG / WebP only; PDFs are converted to images)', 'err');
       }).catch(function (e) {
-        setStatus('处理失败：' + f.name + ' — ' + e.message, 'err');
+        setStatus('Could not process ' + f.name + ' — ' + e.message, 'err');
       });
     });
     chain.then(function () {
       busy = false;
-      if (items.length) setStatus('完成，共 ' + items.length + ' 张图片已上传', 'ok');
+      if (items.length) setStatus('Done — ' + items.length + ' image(s) uploaded', 'ok');
       render();
     });
   }
@@ -225,19 +226,19 @@
       form.addEventListener('submit', function (e) {
         if (busy) {
           e.preventDefault();
-          setStatus('图片还在上传/转换中，请稍候再提交', 'err');
+          setStatus('Images are still uploading / converting. Please wait before submitting.', 'err');
           return;
         }
         if (!items.length) {
           e.preventDefault();
-          setStatus('请先上传至少一张图片（仅 jpg / png / webp）', 'err');
+          setStatus('Please upload at least one image (JPG / PNG / WebP).', 'err');
           zone.focus();
         }
       });
     }
     render();
 
-    /* ---------- 服务端签发的验证码 ---------- */
+    /* ---------- server-issued verification ---------- */
     var uploadBox = document.querySelector('.sb-upload[data-api]');
     var api = uploadBox ? uploadBox.getAttribute('data-api') : '';
     var capImg = $('sbCaptchaSvg'), capAns = $('sbCaptchaAnswer'),
@@ -245,7 +246,7 @@
     function capStatus(t) { if (capMsg) capMsg.textContent = t; }
     function loadCaptcha() {
       if (!api || !capImg || !capTok) return;
-      capStatus('正在加载验证码…');
+      capStatus('Loading verification…');
       fetch(api + '/captcha', { cache: 'no-store' })
         .then(function (r) { return r.json(); })
         .then(function (d) {
@@ -254,7 +255,7 @@
           if (capAns) capAns.value = '';
           capStatus('');
         })
-        .catch(function () { capStatus('验证码加载失败，请点「换一题」重试'); });
+        .catch(function () { capStatus('Could not load verification. Click "New question" to retry.'); });
     }
     if (capBtn) capBtn.addEventListener('click', loadCaptcha);
     loadCaptcha();
