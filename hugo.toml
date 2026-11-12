@@ -1,5 +1,5 @@
 baseURL = "https://www.diy365.cc/"
-languageCode = "en-us"
+locale = "en"
 title = "Handmade - Free Crochet Patterns"
 defaultContentLanguage = "en"
 enableEmoji = true

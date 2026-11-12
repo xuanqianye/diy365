@@ -24,7 +24,8 @@ diy365静态钩针图解站/
 ├── netlify/functions/submit.js  # Netlify Function（同逻辑，可切换部署）
 ├── backup/diy365-cc/         # 原线上站法律页备份（markdown）
 ├── .env                      # 本地环境变量（superbed token，勿提交）
-└── .github/workflows/        # 自动构建部署（待创建，见下）
+├── netlify.toml              # Netlify 可切换部署配置
+└── .github/workflows/        # 自动构建部署（deploy.yml → Cloudflare Pages）
 ```
 
 ---
@@ -46,11 +47,23 @@ hugo server -D        # -D 包含草稿（draft:true 的投稿）
 ## 3. 部署方式（可切换，互不锁定）
 
 ### A. Cloudflare Pages（推荐 · 零服务器 · 全球 CDN）
+
+**两种方式任选其一：**
+
+**A-1. 仪表盘直连 Git（最省事，且自动启用 Pages Functions）**
 1. 把本项目推到 GitHub。
-2. Cloudflare Pages 新建项目 → 连接仓库 → Framework: Hugo → Build: `hugo` → 输出 `public`。
+2. Cloudflare Pages 新建项目 → 连接 GitHub 仓库 → Framework: Hugo → Build: `hugo --minify --gc` → 输出 `public`。
 3. 域名 diy365.cc 的 DNS 接入 Cloudflare，添加 CNAME 指向 Pages。
-4. 环境变量（Pages → Settings → Environment）：`GH_TOKEN` / `GH_REPO` / `GH_BRANCH`（投稿后端用）。
-5. 表单提交指向 `/submit`（Cloudflare 自动路由到 `functions/submit.js`）。
+4. 环境变量（Pages → Settings → Environment variables）：`GH_TOKEN` / `GH_REPO` / `GH_BRANCH`（投稿后端回写 GitHub 用）。
+5. 表单提交指向 `/submit`（Cloudflare 自动路由到根目录 `functions/submit.js`）。
+
+**A-2. GitHub Actions 自动部署（git push 即上线，可切换）**
+- 已内置 `.github/workflows/deploy.yml`：push 到 `main` 自动用 Hugo 构建并部署到 Cloudflare Pages（含 `functions/` 一并打包）。
+- 需在本仓库 **Settings → Secrets** 配置：`CLOUDFLARE_API_TOKEN`（Pages:Edit 权限）、`CLOUDFLARE_ACCOUNT_ID`。
+- 之后每次 `git push` 自动上线，无需手动连仪表盘。
+
+> 注：`hugo.toml` 的 `params.submitEndpoint` 默认已设为 `/submit`（Cloudflare 路由）。
+> 切换到 Netlify 时改成 `/.netlify/functions/submit`。
 
 ### B. Netlify（备选）
 - 同样推 GitHub，Netlify 导入 → Build: `hugo`。

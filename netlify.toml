@@ -7,7 +7,7 @@
   command = "hugo --minify --gc"
 
 [build.environment]
-  HUGO_VERSION = "0.140.0"
+  HUGO_VERSION = "0.169.0"
   HUGO_ENV = "production"
 
 # 投稿 / 联系 / DMCA 后端走 Netlify Functions（netlify/functions/submit.js）
