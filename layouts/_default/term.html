@@ -1,7 +1,8 @@
 {{ define "main" }}
 <header class="hero"><h1>{{ .Title }}</h1><p>{{ .Data.Singular | title }}</p></header>
 {{ partial "adsense.html" (dict "slot" .Site.Params.adsenseSlotList "inline" false) }}
-<div class="masonry">
+{{ partial "feed-controls.html" (dict "tax" .Data.Plural "term" .Title) }}
+<div class="masonry" id="feedMasonry">
   {{ range .Paginator.Pages }}
     {{ partial "pattern-card.html" . }}
   {{ end }}

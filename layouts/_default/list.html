@@ -4,7 +4,8 @@
   <p>{{ with .Description }}{{ . }}{{ end }}</p>
 </header>
 {{ partial "adsense.html" (dict "slot" .Site.Params.adsenseSlotList "inline" false) }}
-<div class="masonry">
+{{ partial "feed-controls.html" (dict) }}
+<div class="masonry" id="feedMasonry">
   {{ range .Paginator.Pages }}
     {{ partial "pattern-card.html" . }}
   {{ end }}

@@ -26,7 +26,8 @@ summaryLength = 28
   # 投稿后端函数地址
   #   主部署 Cloudflare Pages → "/submit"（functions/submit.js 自动路由）
   #   切换到 Netlify        → "/.netlify/functions/submit"
-  submitEndpoint = "/submit"
+  submitApi = "https://diy365-submit.binean2046.workers.dev"
+  submitEndpoint = "https://diy365-submit.binean2046.workers.dev/submit"
 
 [params.social]
   pinterest = "https://pinterest.com/yourname"   # TODO

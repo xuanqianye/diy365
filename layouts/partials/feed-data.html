@@ -1,0 +1,25 @@
+{{- /* 首页构建时生成瀑布流分片 JSON（每片 500 条），供前端按需加载。
+       只在首页生成一次，其他页面直接引用 /data/feed/ 下的静态 URL。 */ -}}
+{{- $pages := where .Site.RegularPages "Type" "patterns" -}}
+{{- $per := 500 -}}
+{{- $total := len $pages -}}
+{{- $chunks := div (add $total (sub $per 1)) $per -}}
+{{- $items := slice -}}
+{{- range $pages -}}
+  {{- $cover := partial "first-url.html" .Params.cover -}}
+  {{- $cat := "" -}}
+  {{- with .Params.categories -}}{{- $cat = index . 0 -}}{{- end -}}
+  {{- $tags := .Params.tags | default (slice) -}}
+  {{- $items = $items | append (dict "title" .Title "url" .RelPermalink "cover" $cover "category" $cat "tags" $tags "date" (.Date.Format "Jan 2, 2006")) -}}
+{{- end -}}
+{{- $mf := dict "total" $total "perChunk" $per "chunks" $chunks -}}
+{{- $m := resources.FromString "data/feed/manifest.json" ($mf | jsonify) -}}
+<!-- feed:{{ $m.RelPermalink }} -->
+{{- if gt $chunks 0 -}}
+  {{- range $i := seq 1 $chunks -}}
+    {{- $start := mul (sub $i 1) $per -}}
+    {{- $part := first $per (after $start $items) -}}
+    {{- $r := resources.FromString (printf "data/feed/part-%d.json" $i) ($part | jsonify) -}}
+    <!-- feed:{{ $r.RelPermalink }} -->
+  {{- end -}}
+{{- end -}}

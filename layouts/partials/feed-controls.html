@@ -1,0 +1,15 @@
+{{- $tax := .tax | default "" -}}
+{{- $term := .term | default "" -}}
+<div class="feed-controls" id="feedControls" data-taxonomy="{{ $tax }}" data-term="{{ $term }}">
+  <span class="feed-label">显示方式</span>
+  <select id="feedMode" aria-label="加载模式">
+    <option value="infinite">一直加载</option>
+    <option value="paged">页码显示</option>
+  </select>
+  <select id="feedSize" aria-label="每页条数">
+    <option value="20">每页 20 条</option>
+    <option value="30">每页 30 条</option>
+    <option value="50">每页 50 条</option>
+  </select>
+  <span class="feed-info" id="feedInfo"></span>
+</div>
