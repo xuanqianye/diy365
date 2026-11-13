@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>DIY365 后台 — PDF 批量发布</title>
+  <style>
+    :root { --p:#d96b86; --pd:#c2536f; --bg:#fffaf7; --bd:#f0e3e0; --tx:#2d2a2e; --mu:#8a8288; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--tx); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans",sans-serif; line-height:1.6; padding:24px; }
+    .wrap { max-width:880px; margin:0 auto; }
+    h1 { font-size:1.5rem; color:var(--pd); margin:0 0 4px; }
+    .sub { color:var(--mu); margin:0 0 18px; font-size:.9rem; }
+    label { display:block; font-weight:600; margin:14px 0 6px; font-size:.92rem; }
+    textarea, input[type=text], input[type=password], input[type=file] { width:100%; border:1px solid var(--bd); border-radius:10px; padding:10px 12px; font:inherit; background:#fff; color:var(--tx); }
+    .hint { font-size:.82rem; color:var(--mu); background:#fdeef1; border:1px solid #f6d9e0; border-radius:8px; padding:10px 12px; margin-top:8px; }
+    .hint code { background:#fff; padding:1px 5px; border-radius:4px; }
+    .card { background:#fff; border:1px solid var(--bd); border-radius:10px; padding:14px; margin-top:14px; }
+    .row { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+    button { border:0; border-radius:10px; padding:11px 20px; font:inherit; font-weight:700; cursor:pointer; }
+    .btn-primary { background:var(--p); color:#fff; }
+    .btn-primary:disabled { opacity:.5; cursor:not-allowed; }
+    .btn-ghost { background:#fff; color:var(--pd); border:1px solid var(--bd); }
+    #status { margin-top:16px; font-size:.88rem; white-space:pre-wrap; background:#fff; border:1px solid var(--bd); border-radius:10px; padding:12px; max-height:340px; overflow:auto; }
+    #preview { margin-top:12px; }
+    .pv { background:#fff; border:1px solid var(--bd); border-radius:8px; padding:8px 10px; margin-bottom:6px; font-size:.85rem; }
+    .pv b { color:var(--pd); }
+    .pv .err { color:#d6453d; }
+    .pv .ok { color:#2e9e5b; }
+    a { color:var(--pd); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>PDF 批量发布图解</h1>
+  <p class="sub">一次选多个 PDF，每个 PDF 生成一篇<strong>草稿</strong>（图片来自 PDF 逐页裁剪并上传图床）。提交后到 Decap 后台 <code>/anan/</code> 逐篇点「发布」。需先登录 Decap 后台或粘贴 GitHub Token。</p>
+
+  <label for="token">GitHub Token（自动读取 Decap 登录态，失败再手动粘贴）</label>
+  <input type="password" id="token" placeholder="ghp_xxx 或 github_pat_xxx（留空则尝试复用 Decap 登录态）" autocomplete="off" />
+
+  <div class="card">
+    <strong>统一设置（应用到每篇）</strong>
+    <label for="cats">分类（逗号分隔，可空）</label>
+    <input type="text" id="cats" placeholder="例如：Amigurumi,玩偶" />
+    <label for="tags">标签（逗号分隔，可空）</label>
+    <input type="text" id="tags" placeholder="例如：钩织,图解,免费" />
+    <div class="hint">
+      • <b>标题</b>自动取 PDF 文件名（去扩展名，下划线/连字符转空格，保留序号），例如 <code>0012_sunflower.pdf</code> → <code>0012 sunflower</code>。<br>
+      • 分类 / 标签建议填与「分类管理 / 标签管理」里<strong>已有的名称</strong>，前台才会出现对应聚合页；填新名称 Hugo 也会自动建页。
+    </div>
+  </div>
+
+  <label for="files">选择 PDF 文件（可多选，每个 = 一篇草稿）</label>
+  <input type="file" id="files" accept=".pdf,application/pdf" multiple />
+  <div class="hint">
+    PDF 限制（与单篇上传一致）：每本 ≤ 40MB、≤ 30 页；长页会自动切片成多张图。每个 PDF 会变成若干张步骤图，第一张自动作封面。
+    处理在浏览器本地完成，可能耗时较久（页数多时请耐心等待，不要关闭页面）。
+  </div>
+
+  <div class="row">
+    <button class="btn-primary" id="procBtn">① 裁剪并上传图床</button>
+    <button class="btn-primary" id="commitBtn" disabled>② 生成草稿并提交</button>
+    <button class="btn-ghost" id="clearBtn">清空</button>
+  </div>
+
+  <div id="preview"></div>
+  <div id="status"></div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var REPO = "xuanqianye/diy365";
+  var BRANCH = "main";
+  var API = "https://api.github.com";
+
+  // ---- Superbed（从 config.yml 复用的公开 key；Decap 在浏览器直传，本就公开）----
+  var SUPERBED_ENDPOINT = "https://api.superbed.cn/upload";
+  var SUPERBED_TOKEN = "41871f8e5d6823960d3128b1ffb518a7";
+
+  // ---- pdf.js（站点已内置）----
+  var PDF_LIB = "/js/vendor/pdf.min.mjs";
+  var PDF_WORKER = "/js/vendor/pdf.worker.min.mjs";
+  var MAX_PDF_BYTES = 40 * 1024 * 1024;
+  var MAX_PDF_PAGES = 30;
+  var MAX_CANVAS_W = 1500;
+  var SLICE_RATIO = 1.7;
+  var MAX_SLICES = 6;
+  var pdfjs = null;
+
+  var TOKEN = null;
+  var ARTICLES = [];
+
+  var $ = function (id) { return document.getElementById(id); };
+  function log(msg, cls) {
+    var s = $("status");
+    var line = document.createElement("div");
+    if (cls) line.className = cls;
+    line.textContent = msg;
+    s.appendChild(line);
+    s.scrollTop = s.scrollHeight;
+  }
+  function escapeFm(s) { return String(s).replace(/"/g, '\\"'); }
+  function b64(str) { return btoa(unescape(encodeURIComponent(str))); }
+
+  // 1) 从 localStorage 找 Decap/CMS 登录态里的 GitHub token
+  function detectToken() {
+    var manual = $("token").value.trim();
+    if (manual) return manual;
+    var re = /^(gh[op]_|github_pat_|[0-9a-f]{40})$/;
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      var v = localStorage.getItem(k);
+      if (!/[a-z]*(decap|cms|netlify|github)[a-z]*/i.test(k)) continue;
+      try {
+        var obj = JSON.parse(v);
+        var t = obj.token || obj.access_token || (obj.data && obj.data.token) || (obj.data && obj.data.access_token);
+        if (t && re.test(t)) return t;
+      } catch (e) { /* not json */ }
+    }
+    return null;
+  }
+
+  // 标题：保留序号，去扩展名，下划线/连字符转空格
+  function cleanTitle(name) {
+    return (name || "").replace(/\.[^.]+$/, "")
+      .replace(/_/g, " ").replace(/-/g, " ")
+      .replace(/\s+/g, " ").trim();
+  }
+  function slugify(name, used) {
+    var s = (name || "").replace(/\.[^.]+$/, "")
+      .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50) || "post";
+    var base = s, n = 2;
+    while (used[base]) { base = s + "-" + n; n++; }
+    used[base] = true;
+    return base;
+  }
+
+  // ---- Superbed 上传（复刻 superbed-uploader.js）----
+  function uploadBlob(blob, name) {
+    var fd = new FormData();
+    fd.append("file", blob, name || "image.webp");
+    fd.append("token", SUPERBED_TOKEN);
+    fd.append("categories", "diy365");
+    return fetch(SUPERBED_ENDPOINT, { method: "POST", body: fd })
+      .then(function (r) {
+        return r.text().then(function (txt) {
+          var d = null;
+          try { d = JSON.parse(txt); } catch (e) { d = { _raw: txt }; }
+          var url = d.url || (d.data && d.data.url) || d.src || (d.data && d.data.src);
+          if (!r.ok || !url || (typeof d.err !== "undefined" && d.err !== 0)) {
+            var msg = d.error || d.msg || d.message ||
+              (typeof d.err !== "undefined" ? ("err=" + d.err) : "") || txt || ("HTTP " + (r.status || "err"));
+            throw new Error(String(msg).slice(0, 160));
+          }
+          return url;
+        });
+      });
+  }
+
+  function canvasToImage(canvas) {
+    return new Promise(function (resolve) {
+      canvas.toBlob(function (b) {
+        if (b && b.type === "image/webp") { resolve({ blob: b, ext: "webp" }); return; }
+        canvas.toBlob(function (b2) {
+          resolve({ blob: b2 || b, ext: "jpg" });
+        }, "image/jpeg", 0.88);
+      }, "image/webp", 0.88);
+    });
+  }
+
+  function loadPdfjs() {
+    if (pdfjs) return Promise.resolve(pdfjs);
+    return import(PDF_LIB).then(function (mod) {
+      mod.GlobalWorkerOptions.workerSrc = PDF_WORKER;
+      pdfjs = mod;
+      return mod;
+    });
+  }
+
+  // 逐页渲染 + 长页切片 + 转图 + 上传，返回图片 URL 数组
+  function processPdf(file, onStatus) {
+    if (file.size > MAX_PDF_BYTES) {
+      return Promise.reject(new Error("PDF 超过 40MB，请先压缩：" + file.name));
+    }
+    return loadPdfjs().then(function (lib) {
+      return file.arrayBuffer().then(function (buf) {
+        return lib.getDocument({ data: buf }).promise;
+      }).then(function (doc) {
+        var pages = Math.min(doc.numPages, MAX_PDF_PAGES);
+        var results = [];
+        var chain = Promise.resolve();
+        for (var p = 1; p <= pages; p++) {
+          (function (pageNo) {
+            chain = chain.then(function () {
+              onStatus && onStatus("转换 " + file.name + " 第 " + pageNo + "/" + doc.numPages + " 页…");
+              return doc.getPage(pageNo);
+            }).then(function (page) {
+              var vp = page.getViewport({ scale: 1.5 });
+              var scale = Math.min(1, MAX_CANVAS_W / vp.width) * 1.5;
+              var vp2 = page.getViewport({ scale: scale });
+              var c = document.createElement("canvas");
+              c.width = Math.max(1, Math.round(vp2.width));
+              c.height = Math.max(1, Math.round(vp2.height));
+              return page.render({ canvasContext: c.getContext("2d"), viewport: vp2 }).promise.then(function () { return c; });
+            }).then(function (c) {
+              var n = Math.min(Math.ceil(c.height / (c.width * SLICE_RATIO)), MAX_SLICES) || 1;
+              var base = file.name.replace(/\.pdf$/i, "").replace(/[^A-Za-z0-9_-]+/g, "-").slice(0, 40) || "pattern";
+              var seq = Promise.resolve();
+              for (var s = 0; s < n; s++) {
+                (function (idx, total) {
+                  seq = seq.then(function () {
+                    var y = Math.round(idx * c.height / total);
+                    var h = Math.round((idx + 1) * c.height / total) - y;
+                    var seg = document.createElement("canvas");
+                    seg.width = c.width; seg.height = Math.max(1, h);
+                    seg.getContext("2d").drawImage(c, 0, y, c.width, h, 0, 0, c.width, h);
+                    return canvasToImage(seg).then(function (img) {
+                      var name = base + "-p" + pageNo + (total > 1 ? "-s" + (idx + 1) : "") + "." + img.ext;
+                      return uploadBlob(img.blob, name).then(function (url) {
+                        results.push(url);
+                        onStatus && onStatus("已上传 " + name + "（" + results.length + " 张）");
+                      });
+                    });
+                  });
+                })(s, n);
+              }
+              return seq;
+            });
+          })(p);
+        }
+        return chain.then(function () {
+          if (doc.numPages > MAX_PDF_PAGES) {
+            onStatus && onStatus(file.name + " 共 " + doc.numPages + " 页，仅转换前 " + MAX_PDF_PAGES + " 页");
+          }
+          return results;
+        });
+      });
+    });
+  }
+
+  function splitList(s) {
+    return s ? s.split(/[,，]/).map(function (x) { return x.trim(); }).filter(Boolean) : [];
+  }
+
+  function buildMd(a) {
+    var fm = [];
+    fm.push('title: "' + escapeFm(a.title) + '"');
+    fm.push("date: " + new Date().toISOString().slice(0, 10));
+    if (a.cats.length) fm.push("categories: [" + a.cats.map(function (c) { return '"' + escapeFm(c) + '"'; }).join(", ") + "]");
+    if (a.tags.length) fm.push("tags: [" + a.tags.map(function (t) { return '"' + escapeFm(t) + '"'; }).join(", ") + "]");
+    if (a.cover) fm.push("cover: " + a.cover);
+    if (a.images.length) fm.push("pinImage: [" + a.images.map(function (u) { return '"' + u + '"'; }).join(", ") + "]");
+    fm.push("slug: " + a.slug);
+    fm.push("draft: true");
+    return "---\n" + fm.join("\n") + "\n---\n";
+  }
+
+  function renderPreview() {
+    var box = $("preview");
+    box.innerHTML = "";
+    if (!ARTICLES.length) { box.innerHTML = '<div class="pv">还没有处理出任何文章。</div>'; return; }
+    ARTICLES.forEach(function (a, i) {
+      var d = document.createElement("div");
+      d.className = "pv";
+      d.innerHTML = "<b>" + (i + 1) + ". " + escapeHtml(a.title) + "</b> ｜ slug: " + a.slug +
+        " ｜ 图片:" + a.images.length +
+        (a.error ? ' ｜ <span class="err">' + escapeHtml(a.error) + "</span>" : ' ｜ <span class="ok">就绪</span>');
+      box.appendChild(d);
+    });
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; });
+  }
+
+  function process() {
+    var files = $("files").files;
+    if (!files || !files.length) { log("❌ 请先选择至少一个 PDF。", "err"); return; }
+    var cats = splitList($("cats").value);
+    var tags = splitList($("tags").value);
+    ARTICLES = [];
+    $("commitBtn").disabled = true;
+    $("procBtn").disabled = true;
+    var used = {};
+
+    var chain = Promise.resolve();
+    Array.prototype.forEach.call(files, function (file) {
+      if (!/\.pdf$/i.test(file.name) && file.type !== "application/pdf") {
+        log("⚠️ 跳过非 PDF 文件：" + file.name, "err");
+        return;
+      }
+      chain = chain.then(function () {
+        var a = {
+          file: file,
+          title: cleanTitle(file.name),
+          slug: slugify(file.name, used),
+          cats: cats,
+          tags: tags,
+          images: [],
+          cover: "",
+          error: ""
+        };
+        log("▶ 开始处理：" + file.name + " → 标题「" + a.title + "」");
+        return processPdf(file, function (msg) { log("   " + msg); }).then(function (urls) {
+          a.images = urls;
+          a.cover = urls[0] || "";
+          ARTICLES.push(a);
+          log("✓ " + file.name + " 完成，共 " + urls.length + " 张图。", "ok");
+        }).catch(function (e) {
+          a.error = e.message;
+          ARTICLES.push(a);
+          log("❌ " + file.name + " 处理失败：" + e.message, "err");
+        });
+      });
+    });
+
+    chain.then(function () {
+      var ok = ARTICLES.filter(function (a) { return a.images.length; }).length;
+      renderPreview();
+      $("procBtn").disabled = false;
+      if (ok) { $("commitBtn").disabled = false; log("全部处理完：成功 " + ok + " 篇，失败 " + (ARTICLES.length - ok) + " 篇。确认无误点「生成草稿并提交」。", "ok"); }
+      else { log("没有成功的 PDF，无法提交。", "err"); }
+    });
+  }
+
+  // ---- GitHub Git Tree API 一次性提交所有草稿 ----
+  function gh(path, opts) {
+    opts = opts || {};
+    var headers = { "Authorization": "token " + TOKEN, "Accept": "application/vnd.github+json" };
+    if (opts.body) headers["Content-Type"] = "application/json";
+    return fetch(API + path, { method: opts.method || "GET", headers: headers, body: opts.body })
+      .then(function (r) {
+        return r.text().then(function (txt) {
+          if (!r.ok) throw new Error(path + " → " + r.status + " " + txt.slice(0, 200));
+          try { return JSON.parse(txt); } catch (e) { return txt; }
+        });
+      });
+  }
+
+  function commitDrafts() {
+    TOKEN = detectToken();
+    if (!TOKEN) { log("❌ 未找到 GitHub Token：请先登录 Decap 后台，或手动粘贴 Token。", "err"); return; }
+    var ready = ARTICLES.filter(function (a) { return a.images.length; });
+    if (!ready.length) { log("❌ 没有可提交的草稿。", "err"); return; }
+
+    $("commitBtn").disabled = true;
+    log("开始：准备生成 " + ready.length + " 篇草稿…");
+
+    ready.forEach(function (a, i) { a.filename = a.slug; a.md = buildMd(a); });
+
+    gh("/repos/" + REPO + "/git/refs/heads/" + BRANCH)
+      .then(function (ref) {
+        var commitSha = ref.object.sha;
+        log("✓ 当前分支 HEAD: " + commitSha.slice(0, 8));
+        return gh("/repos/" + REPO + "/git/commits/" + commitSha).then(function (commit) {
+          return { commitSha: commitSha, baseTree: commit.tree.sha };
+        });
+      })
+      .then(function (ctx) {
+        log("正在上传 " + ready.length + " 个文件内容…");
+        return Promise.all(ready.map(function (a) {
+          return gh("/repos/" + REPO + "/git/blobs", {
+            method: "POST",
+            body: JSON.stringify({ content: b64(a.md), encoding: "base64" })
+          }).then(function (b) { return { path: "content/patterns/" + a.filename + ".md", sha: b.sha }; });
+        })).then(function (blobs) { return { ctx: ctx, blobs: blobs }; });
+      })
+      .then(function (data) {
+        log("正在创建新树（tree）…");
+        return gh("/repos/" + REPO + "/git/trees", {
+          method: "POST",
+          body: JSON.stringify({
+            base_tree: data.ctx.baseTree,
+            tree: data.blobs.map(function (b) { return { path: b.path, mode: "100644", type: "blob", sha: b.sha }; })
+          })
+        }).then(function (tree) { return { ctx: data.ctx, treeSha: tree.sha }; });
+      })
+      .then(function (data) {
+        log("正在创建提交（一次提交包含全部草稿）…");
+        return gh("/repos/" + REPO + "/git/commits", {
+          method: "POST",
+          body: JSON.stringify({
+            message: "batch PDF drafts " + ready.length + " patterns via /anan/batch-pdf",
+            tree: data.treeSha,
+            parents: [data.ctx.commitSha]
+          })
+        }).then(function (commit) { return commit.sha; });
+      })
+      .then(function (newSha) {
+        log("正在更新分支引用 → " + newSha.slice(0, 8) + " …");
+        return gh("/repos/" + REPO + "/git/refs/heads/" + BRANCH, {
+          method: "PATCH",
+          body: JSON.stringify({ sha: newSha, force: false })
+        });
+      })
+      .then(function () {
+        log("✅ 已提交 " + ready.length + " 篇草稿（draft: true），GitHub Actions 会自动构建。它们现在在 Decap 后台「钩针图解」里显示为草稿。", "ok");
+        ready.forEach(function (a) {
+          log("   • 「" + a.title + "」 → 草稿链接：/anan/#/collections/patterns/" + encodeURIComponent(a.slug) +
+            " ｜ 发布后地址：/patterns/" + encodeURIComponent(a.slug) + "/", "ok");
+        });
+        log("到 Decap 打开每篇草稿，取消「草稿（不发布）」勾选并保存，即完成发布。部署通常 1–3 分钟。");
+      })
+      .catch(function (err) {
+        log("❌ 提交失败：" + err.message, "err");
+        log("提示：若 401，说明读不到有效 token，请在本页手动粘贴 GitHub Token（需 repo 权限）。", "err");
+      })
+      .then(function () { $("commitBtn").disabled = false; });
+  }
+
+  $("procBtn").addEventListener("click", process);
+  $("commitBtn").addEventListener("click", commitDrafts);
+  $("clearBtn").addEventListener("click", function () {
+    $("files").value = ""; $("preview").innerHTML = ""; ARTICLES = [];
+    $("commitBtn").disabled = true; $("status").innerHTML = "";
+  });
+
+  window.addEventListener("DOMContentLoaded", function () {
+    if (detectToken()) log("✓ 已检测到 Decap 登录态的 GitHub Token，可直接提交。", "ok");
+    else log("未检测到登录态，请先登录 Decap 后台，或手动粘贴 GitHub Token。");
+  });
+})();
+</script>
+</body>
+</html>
