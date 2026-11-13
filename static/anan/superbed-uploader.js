@@ -37,6 +37,26 @@
   var SLICE_RATIO = 1.7;   // each section height ~ width * 1.7
   var MAX_SLICES = 6;      // max sections per page
 
+  /* ---------- 自动标题：用上传文件名（去扩展名）填充文章标题 ----------
+     仅在「标题」字段当前为空时写入，已填则不覆盖。 */
+  function baseName(n) { return (n || '').replace(/\.[^.]+$/, ''); }
+  function cleanTitle(n) {
+    return baseName(n)
+      .replace(/^\d+_/, '')        // 去掉防重复用的序号前缀，如 0012_
+      .replace(/_/g, ' ')         // 下划线转空格，便于阅读
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+  function applyAutoTitle(name) {
+    if (!name) return;
+    try {
+      if (typeof window.__diy365SetField !== 'function') return;
+      var cur = (typeof window.__diy365GetField === 'function') ? window.__diy365GetField('title') : undefined;
+      if (cur && String(cur).trim() !== '') return;   // 已有标题则不覆盖
+      window.__diy365SetField('title', cleanTitle(name));
+    } catch (e) { console.error('applyAutoTitle failed', e); }
+  }
+
   var SuperbedLibrary = {
     name: 'superbed',
     config: {},
@@ -48,6 +68,7 @@
       var apiKey = (options.config && options.config.apiKey) || '';
       var overlay = null;
       var pdfjs = null;
+      var pendingTitleName = null;   // 本次弹窗首个上传文件的（去扩展名）名，用于自动标题
 
       function statusEl() {
         return overlay ? overlay.querySelector('.sb-status') : null;
@@ -180,6 +201,7 @@
 
       /* ---------- one selected file -> one or more uploaded URLs ---------- */
       function processFile(file, results) {
+        if (pendingTitleName === null) pendingTitleName = baseName(file.name);
         if (isPdf(file)) return processPdf(file, results);
         if (isImage(file)) {
           if (file.size > MAX_IMG_BYTES) {
@@ -193,6 +215,7 @@
       }
 
       function open(close, allowMultiple) {
+        pendingTitleName = null;   // 每次打开上传窗重置
         overlay = document.createElement('div');
         overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2147483000;display:flex;align-items:center;justify-content:center;';
         var box = document.createElement('div');
@@ -252,6 +275,8 @@
             try {
               if (typeof handleInsert === 'function') handleInsert(multi ? urls : urls[0]);
             } catch (e) { console.error(e); }
+            // 上传完成后，用首个文件名自动填充标题（仅当标题为空）
+            applyAutoTitle(pendingTitleName);
             setTimeout(closeModal, 700);
           });
         });

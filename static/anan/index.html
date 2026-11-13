@@ -28,6 +28,9 @@
     })();
   </script>
 
+  <!-- 草稿字段安全读写助手（自动标题 / 标签预设共用，须先于 superbed-uploader / tag-presets 加载） -->
+  <script src="./field-helper.js?v=20261113"></script>
+
   <!-- 发布完成后提醒「已经发布成功，看一看前端有没有上线」 -->
   <script src="./deploy-notice.js?v=20261113"></script>
 
@@ -39,6 +42,9 @@
 
   <!-- 闲置超时自动退出：超过 1 小时无操作清除登录态并强制重新登录 -->
   <script src="./idle-timeout.js?v=20261113"></script>
+
+  <!-- 后台「标签预设」：保存当前标签组合、下次一键套用 -->
+  <script src="./tag-presets.js?v=20261113"></script>
 
   <script src="./superbed-uploader.js"></script>
 
