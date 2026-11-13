@@ -4,6 +4,7 @@ date: 2026-11-13
 draft: false
 categories:
   - Chinese Pattern
+  - Amigurumi
 tags:
   - Amigurumi
   - Chinese Pattern
