@@ -116,6 +116,8 @@ img { max-width: 100%; height: auto; display: block; }
     font-size: 0.9rem;
     margin: 0 0 4px;
   }
+  /* Mobile: hide category/tag/time meta on cover cards */
+  .masonry .card-meta { display: none; }
 }
 
 .card {
