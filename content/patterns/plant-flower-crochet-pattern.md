@@ -2,6 +2,8 @@
 title: Plant & Flower Crochet Pattern
 date: 2026-11-13
 draft: false
+categories:
+  - Plant Flower
 tags:
   - DIY
   - Crochet
