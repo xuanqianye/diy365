@@ -140,8 +140,6 @@ img { max-width: 100%; height: auto; display: block; }
 .post h1 { font-size: 1.7rem; margin: 0 0 10px; }
 .post-meta { color: var(--muted); font-size: 0.85rem; margin-bottom: 18px; display: flex; gap: 12px; flex-wrap: wrap; }
 .post-meta .badge { background: #fdeef1; }
-.view-count { color: var(--muted); font-size: 0.85rem; }
-.view-count #vc-num { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text); }
 .post-cover { width: 100%; border-radius: 10px; margin-bottom: 18px; }
 .post-content h2 { margin-top: 1.6em; font-size: 1.25rem; }
 .post-content h3 { margin-top: 1.3em; }
