@@ -33,7 +33,7 @@
 <body>
 <div class="wrap">
   <h1>草稿管理</h1>
-  <p class="sub">列出所有 <code>draft: true</code> 的「钩针图解」草稿。点「发布」即把 draft 改为 false 并触发部署；点「编辑」跳 Decap 后台修改后再发布。需先登录 Decap 后台或粘贴 GitHub Token。</p>
+  <p class="sub">列出所有 <code>draft: true</code> 的「钩针图解」草稿。点「发布」即把 draft 改为 false 并触发部署；点「编辑」跳 Decap 后台修改后再发布。<strong>「全部发布」会合并成 1 次提交、只触发 1 次部署</strong>（无论多少篇都不触发限流）。需先登录 Decap 后台或粘贴 GitHub Token。</p>
 
   <label for="token">GitHub Token（自动读取 Decap 登录态，失败再手动粘贴）</label>
   <input type="password" id="token" placeholder="ghp_xxx 或 github_pat_xxx（留空则尝试复用 Decap 登录态）" autocomplete="off" />
@@ -191,28 +191,78 @@
     }).catch(function (e) { log("❌ " + slug + " 发布失败：" + e.message, "err"); btn.disabled = false; });
   }
 
+  // 全部发布：合并为 1 次提交（Git Tree API），只触发 1 次部署，避免大量连续提交触发限流/部署取消
   function publishAll() {
     TOKEN = detectToken();
     var drafts = Object.keys(ITEMS).filter(function (s) { return ITEMS[s].isDraft; });
     if (!drafts.length) { log("没有待发布的草稿。", "err"); return; }
-    if (!window.confirm("确认发布全部 " + drafts.length + " 篇草稿？")) return;
+    if (!window.confirm("确认发布全部 " + drafts.length + " 篇草稿？（将合并为 1 次提交、触发 1 次部署）")) return;
     $("pubAllBtn").disabled = true;
-    var chain = Promise.resolve(), n = 0;
+    log("开始：准备合并发布 " + drafts.length + " 篇草稿（1 次提交）…");
+
+    var targets = [];
     drafts.forEach(function (s) {
-      chain = chain.then(function () {
-        var it = ITEMS[s];
-        var nc = setDraftFalse(it.content);
-        if (nc === it.content) { log("⚠️ " + s + " 无 draft:true，跳过。", "err"); return Promise.resolve(); }
-        return gh("/repos/" + REPO + "/contents/content/patterns/" + s + ".md", {
-          method: "PUT",
-          body: JSON.stringify({ message: "publish draft: " + s, content: b64enc(nc), sha: it.sha })
-        }).then(function () { n++; it.content = nc; it.isDraft = false; log("✅ " + s + " 已发布 (" + n + "/" + drafts.length + ")", "ok"); });
-      });
+      var it = ITEMS[s];
+      var nc = setDraftFalse(it.content);
+      if (nc === it.content) { log("⚠️ " + s + " 无 draft:true，跳过。", "err"); return; }
+      targets.push({ slug: s, it: it, newContent: nc });
     });
-    chain.then(function () {
-      log("全部发布完成，GitHub Actions 正在部署（1–3 分钟）。部署后硬刷新前端即可。", "ok");
-      render(Object.keys(ITEMS).filter(function (s) { return ITEMS[s].isDraft; }));
-    }).catch(function (e) { log("❌ 全部发布中断：" + e.message, "err"); $("pubAllBtn").disabled = false; });
+    if (!targets.length) { log("没有需要改动的草稿。", "err"); $("pubAllBtn").disabled = false; return; }
+
+    gh("/repos/" + REPO + "/git/refs/heads/" + BRANCH)
+      .then(function (ref) {
+        var commitSha = ref.object.sha;
+        log("✓ 当前分支 HEAD: " + commitSha.slice(0, 8));
+        return gh("/repos/" + REPO + "/git/commits/" + commitSha).then(function (commit) {
+          return { commitSha: commitSha, baseTree: commit.tree.sha };
+        });
+      })
+      .then(function (ctx) {
+        log("正在上传 " + targets.length + " 个文件内容…");
+        return Promise.all(targets.map(function (t) {
+          return gh("/repos/" + REPO + "/git/blobs", {
+            method: "POST",
+            body: JSON.stringify({ content: b64enc(t.newContent), encoding: "base64" })
+          }).then(function (b) { return { path: "content/patterns/" + t.slug + ".md", sha: b.sha }; });
+        })).then(function (blobs) { return { ctx: ctx, blobs: blobs }; });
+      })
+      .then(function (data) {
+        log("正在创建新树（tree）…");
+        return gh("/repos/" + REPO + "/git/trees", {
+          method: "POST",
+          body: JSON.stringify({
+            base_tree: data.ctx.baseTree,
+            tree: data.blobs.map(function (b) { return { path: b.path, mode: "100644", type: "blob", sha: b.sha }; })
+          })
+        }).then(function (tree) { return { ctx: data.ctx, treeSha: tree.sha }; });
+      })
+      .then(function (data) {
+        log("正在创建提交（1 次提交包含所有发布）…");
+        return gh("/repos/" + REPO + "/git/commits", {
+          method: "POST",
+          body: JSON.stringify({
+            message: "publish " + targets.length + " drafts via /anan/drafts",
+            tree: data.treeSha,
+            parents: [data.ctx.commitSha]
+          })
+        }).then(function (commit) { return commit.sha; });
+      })
+      .then(function (newSha) {
+        return gh("/repos/" + REPO + "/git/refs/heads/" + BRANCH, {
+          method: "PATCH",
+          body: JSON.stringify({ sha: newSha, force: false })
+        });
+      })
+      .then(function () {
+        targets.forEach(function (t) { t.it.content = t.newContent; t.it.isDraft = false; });
+        log("✅ 已合并发布 " + targets.length + " 篇草稿（1 次提交），GitHub Actions 正在部署（1–3 分钟）。部署后硬刷新前端即可看到。", "ok");
+        render(Object.keys(ITEMS).filter(function (s) { return ITEMS[s].isDraft; }));
+        $("pubAllBtn").disabled = false;
+      })
+      .catch(function (e) {
+        log("❌ 全部发布失败：" + e.message + "（若提示非快进/409，说明期间远程有改动，请重新「加载草稿列表」后再试）", "err");
+        $("pubAllBtn").disabled = false;
+      });
   }
 
   $("loadBtn").addEventListener("click", loadDrafts);
