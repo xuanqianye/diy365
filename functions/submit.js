@@ -8,8 +8,26 @@
 // 每次写入会触发 GitHub Actions 重新构建并部署（draft 投稿不会公开，待管理员审核）
 // ============================================================
 
+// --- 频率限制（同进程兜底；真正跨节点限流请在 Cloudflare 控制台 WAF → Rate Limiting Rules 对 /submit 配置）---
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 60 秒窗口
+const RATE_LIMIT_MAX = 10;              // 同 IP 窗口内最多 10 次提交
+const _rateHits = new Map();
+function rateLimited(ip) {
+  const now = Date.now();
+  const rec = _rateHits.get(ip) || { start: now, count: 0 };
+  if (now - rec.start > RATE_LIMIT_WINDOW_MS) { rec.start = now; rec.count = 0; }
+  rec.count++;
+  _rateHits.set(ip, rec);
+  return rec.count > RATE_LIMIT_MAX;
+}
+
 export async function onRequestPost({ request, env }) {
   try {
+    // 频率限制：同 IP 60 秒内最多 10 次，超限直接返回 429
+    const ip = request.headers.get("CF-Connecting-IP") || request.headers.get("X-Forwarded-For") || "unknown";
+    if (rateLimited(ip)) {
+      return new Response("Too many requests, please try again later.", { status: 429 });
+    }
     const form = await request.formData();
     const d = Object.fromEntries(form.entries());
     const type = form.get("form_type") || "submission";
