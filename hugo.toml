@@ -32,6 +32,8 @@ summaryLength = 28
   adsenseSlotPost = "0000000001"    # in-post ad slot
   pinterestVerification = ""        # TODO: Pinterest meta tag content
   googleVerification = ""           # TODO: Google Search Console verification
+  googleAnalytics = ""             # TODO: GA4 Measurement ID, format G-XXXXXXXXXX (empty = not injected)
+  bingVerification = ""            # TODO: Bing Webmaster Tools meta content (msvalidate.01); leave empty if verifying via GSC import
   contactEmail = "copyright@diy365.cc"
   githubRepo = "xuanqianye/diy365"   # TODO: repo used by Decap CMS + submit worker
   # Submit backend endpoint
