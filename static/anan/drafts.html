@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>DIY365 后台 — 草稿管理</title>
+  <style>
+    :root { --p:#d96b86; --pd:#c2536f; --bg:#fffaf7; --bd:#f0e3e0; --tx:#2d2a2e; --mu:#8a8288; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--tx); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans",sans-serif; line-height:1.6; padding:24px; }
+    .wrap { max-width:900px; margin:0 auto; }
+    h1 { font-size:1.5rem; color:var(--pd); margin:0 0 4px; }
+    .sub { color:var(--mu); margin:0 0 18px; font-size:.9rem; }
+    a { color:var(--pd); }
+    label { display:block; font-weight:600; margin:14px 0 6px; font-size:.92rem; }
+    input[type=password] { width:100%; border:1px solid var(--bd); border-radius:10px; padding:10px 12px; font:inherit; background:#fff; color:var(--tx); }
+    .row { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+    button { border:0; border-radius:10px; padding:11px 20px; font:inherit; font-weight:700; cursor:pointer; }
+    .btn-primary { background:var(--p); color:#fff; }
+    .btn-primary:disabled { opacity:.5; cursor:not-allowed; }
+    .btn-ghost { background:#fff; color:var(--pd); border:1px solid var(--bd); }
+    .pv { background:#fff; border:1px solid var(--bd); border-radius:10px; padding:12px 14px; margin-bottom:10px; font-size:.9rem; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+    .pv .meta { flex:1; min-width:200px; }
+    .pv .ops { display:flex; gap:8px; align-items:center; }
+    .pv .pub { background:var(--p); color:#fff; padding:7px 14px; font-size:.85rem; border:0; border-radius:8px; cursor:pointer; }
+    .pv .pub:disabled { opacity:.5; cursor:not-allowed; }
+    .pv .edit { background:#fff; color:var(--pd); border:1px solid var(--bd); padding:7px 14px; border-radius:8px; font-size:.85rem; text-decoration:none; }
+    #status { margin-top:16px; font-size:.88rem; white-space:pre-wrap; background:#fff; border:1px solid var(--bd); border-radius:10px; padding:12px; max-height:300px; overflow:auto; }
+    .ok { color:#2e9e5b; } .err { color:#d6453d; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>草稿管理</h1>
+  <p class="sub">列出所有 <code>draft: true</code> 的「钩针图解」草稿。点「发布」即把 draft 改为 false 并触发部署；点「编辑」跳 Decap 后台修改后再发布。需先登录 Decap 后台或粘贴 GitHub Token。</p>
+
+  <label for="token">GitHub Token（自动读取 Decap 登录态，失败再手动粘贴）</label>
+  <input type="password" id="token" placeholder="ghp_xxx 或 github_pat_xxx（留空则尝试复用 Decap 登录态）" autocomplete="off" />
+
+  <div class="row">
+    <button class="btn-primary" id="loadBtn">① 加载草稿列表</button>
+    <button class="btn-ghost" id="pubAllBtn" disabled>② 全部发布</button>
+    <button class="btn-ghost" id="linkBatch">← 批量发布 PDF</button>
+  </div>
+
+  <div id="list" style="margin-top:16px;"></div>
+  <div id="status"></div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var REPO = "xuanqianye/diy365";
+  var BRANCH = "main";
+  var API = "https://api.github.com";
+
+  var TOKEN = null;
+  var ITEMS = {};   // slug -> {name, path, sha, content, isDraft, title}
+
+  var $ = function (id) { return document.getElementById(id); };
+  function log(msg, cls) {
+    var s = $("status");
+    var d = document.createElement("div");
+    if (cls) d.className = cls;
+    d.textContent = msg;
+    s.appendChild(d);
+    s.scrollTop = s.scrollHeight;
+  }
+
+  // 复用 batch-pdf.html 的 token 探测：先手动粘贴，再读 Decap 登录态
+  function detectToken() {
+    var m = $("token").value.trim();
+    if (m) return m;
+    var re = /^(gh[op]_|github_pat_|[0-9a-f]{40})$/;
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      var v = localStorage.getItem(k);
+      if (!/[a-z]*(decap|cms|netlify|github)[a-z]*/i.test(k)) continue;
+      try {
+        var o = JSON.parse(v);
+        var t = o.token || o.access_token || (o.data && o.data.token) || (o.data && o.data.access_token);
+        if (t && re.test(t)) return t;
+      } catch (e) { /* not json */ }
+    }
+    return null;
+  }
+
+  function b64enc(str) { var b = new TextEncoder().encode(str), s = ""; for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s); }
+  function b64dec(b64) { var bin = atob(b64.replace(/\s/g, "")); var bytes = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i); return new TextDecoder("utf-8").decode(bytes); }
+
+  function gh(path, opts) {
+    opts = opts || {};
+    var h = { "Authorization": "token " + TOKEN, "Accept": "application/vnd.github+json" };
+    if (opts.body) h["Content-Type"] = "application/json";
+    return fetch(API + path, { method: opts.method || "GET", headers: h, body: opts.body })
+      .then(function (r) {
+        return r.text().then(function (t) {
+          if (!r.ok) throw new Error(path + " → " + r.status + " " + t.slice(0, 200));
+          try { return JSON.parse(t); } catch (e) { return t; }
+        });
+      });
+  }
+
+  function titleOf(c) { var m = c.match(/title:\s*"([^"]*)"/); return m ? m[1] : ""; }
+  function escapeHtml(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function isDraft(c) {
+    var m = c.match(/^---\n([\s\S]*?)\n---/);
+    if (!m) return false;
+    var dm = m[1].match(/^\s*draft:\s*(.+?)\s*$/m);
+    if (!dm) return false;
+    return /^(true|yes|1)$/i.test(dm[1].trim());
+  }
+  function setDraftFalse(c) {
+    return c.replace(/^---\n([\s\S]*?)\n---/, function (fm) {
+      return fm.replace(/draft:\s*true\s*$/m, "draft: false");
+    });
+  }
+
+  function loadDrafts() {
+    TOKEN = detectToken();
+    if (!TOKEN) { log("❌ 未找到 GitHub Token：请先登录 Decap 后台，或手动粘贴 Token。", "err"); return; }
+    $("list").innerHTML = "";
+    log("正在列出 content/patterns …");
+    gh("/repos/" + REPO + "/contents/content/patterns").then(function (list) {
+      if (!Array.isArray(list)) throw new Error("目录读取失败：" + JSON.stringify(list).slice(0, 120));
+      var files = list.filter(function (f) { return /\.md$/i.test(f.name); });
+      log("共 " + files.length + " 个 md 文件，逐个检查 draft 字段 …");
+      return Promise.all(files.map(function (f) {
+        return gh("/repos/" + REPO + "/contents/" + f.path).then(function (d) {
+          var content = b64dec(d.content);
+          var slug = f.name.replace(/\.md$/i, "");
+          ITEMS[slug] = { name: f.name, path: f.path, sha: d.sha, content: content, isDraft: isDraft(content), title: titleOf(content) };
+          return ITEMS[slug];
+        });
+      })).then(function (items) {
+        var drafts = items.filter(function (i) { return i.isDraft; });
+        render(drafts);
+        $("pubAllBtn").disabled = !drafts.length;
+        log("草稿共 " + drafts.length + " 篇。", "ok");
+      });
+    }).catch(function (e) { log("❌ " + e.message, "err"); });
+  }
+
+  function render(drafts) {
+    var box = $("list");
+    box.innerHTML = "";
+    if (!drafts.length) { box.innerHTML = '<div class="pv">没有 draft:true 的草稿。</div>'; return; }
+    drafts.forEach(function (d) {
+      var div = document.createElement("div");
+      div.className = "pv";
+      var meta = document.createElement("div");
+      meta.className = "meta";
+      meta.innerHTML = "<b>" + escapeHtml(d.title || d.name) + "</b><br><span style='color:var(--mu);font-size:.82rem'>" + d.name + "</span>";
+      var ops = document.createElement("div");
+      ops.className = "ops";
+      var pub = document.createElement("button");
+      pub.className = "pub";
+      pub.textContent = "发布";
+      pub.addEventListener("click", function () { publish(d.name.replace(/\.md$/, ""), pub); });
+      var edit = document.createElement("a");
+      edit.className = "edit";
+      edit.textContent = "编辑";
+      edit.href = "https://diy365.cc/anan/#/collections/patterns/entries/" + encodeURIComponent(d.name.replace(/\.md$/, ""));
+      edit.target = "_blank";
+      ops.appendChild(pub);
+      ops.appendChild(edit);
+      div.appendChild(meta);
+      div.appendChild(ops);
+      box.appendChild(div);
+    });
+  }
+
+  function publish(slug, btn) {
+    TOKEN = detectToken();
+    var it = ITEMS[slug];
+    if (!it) { log("❌ 找不到 " + slug + " 的缓存，请重新加载列表。", "err"); return; }
+    btn.disabled = true;
+    log("正在发布 " + slug + " …");
+    var newContent = setDraftFalse(it.content);
+    if (newContent === it.content) { log("⚠️ " + slug + " 的 front matter 里没有 draft:true，可能已发布。", "err"); btn.disabled = false; return; }
+    gh("/repos/" + REPO + "/contents/content/patterns/" + slug + ".md", {
+      method: "PUT",
+      body: JSON.stringify({ message: "publish draft: " + slug, content: b64enc(newContent), sha: it.sha })
+    }).then(function () {
+      log("✅ " + slug + " 已改为发布状态，GitHub Actions 正在重新部署（1–3 分钟）。部署完成后硬刷新前端即可看到。", "ok");
+      btn.textContent = "已发布";
+      btn.disabled = true;
+      it.content = newContent;
+      it.isDraft = false;
+    }).catch(function (e) { log("❌ " + slug + " 发布失败：" + e.message, "err"); btn.disabled = false; });
+  }
+
+  function publishAll() {
+    TOKEN = detectToken();
+    var drafts = Object.keys(ITEMS).filter(function (s) { return ITEMS[s].isDraft; });
+    if (!drafts.length) { log("没有待发布的草稿。", "err"); return; }
+    if (!window.confirm("确认发布全部 " + drafts.length + " 篇草稿？")) return;
+    $("pubAllBtn").disabled = true;
+    var chain = Promise.resolve(), n = 0;
+    drafts.forEach(function (s) {
+      chain = chain.then(function () {
+        var it = ITEMS[s];
+        var nc = setDraftFalse(it.content);
+        if (nc === it.content) { log("⚠️ " + s + " 无 draft:true，跳过。", "err"); return Promise.resolve(); }
+        return gh("/repos/" + REPO + "/contents/content/patterns/" + s + ".md", {
+          method: "PUT",
+          body: JSON.stringify({ message: "publish draft: " + s, content: b64enc(nc), sha: it.sha })
+        }).then(function () { n++; it.content = nc; it.isDraft = false; log("✅ " + s + " 已发布 (" + n + "/" + drafts.length + ")", "ok"); });
+      });
+    });
+    chain.then(function () {
+      log("全部发布完成，GitHub Actions 正在部署（1–3 分钟）。部署后硬刷新前端即可。", "ok");
+      render(Object.keys(ITEMS).filter(function (s) { return ITEMS[s].isDraft; }));
+    }).catch(function (e) { log("❌ 全部发布中断：" + e.message, "err"); $("pubAllBtn").disabled = false; });
+  }
+
+  $("loadBtn").addEventListener("click", loadDrafts);
+  $("pubAllBtn").addEventListener("click", publishAll);
+  $("linkBatch").addEventListener("click", function () { location.href = "batch-pdf.html"; });
+  window.addEventListener("DOMContentLoaded", function () {
+    if (detectToken()) log("✓ 已检测到 Decap 登录态的 GitHub Token，可直接加载。", "ok");
+    else log("未检测到登录态，请先登录 Decap 后台，或手动粘贴 GitHub Token。");
+  });
+})();
+</script>
+</body>
+</html>
