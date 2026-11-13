@@ -1,11 +1,24 @@
-{{- /* Normalize a frontmatter value into a LIST of url strings, accepting
-       either a plain string or a YAML list (Decap multi-upload). Always returns a slice.
+{{- /* Normalize a frontmatter value into a LIST of url strings.
+       Accepts: a plain string, a YAML list of strings, or a YAML list of
+       image objects. Decap's `list` widget stores multi-upload images as
+       [{url: "..."}, ...], while batch.md and legacy posts use plain strings.
+       Always returns a slice of strings.
        Usage: {{ $imgs := partial "url-list.html" .Params.pinImage }} */ -}}
 {{- $v := . -}}
 {{- $out := slice -}}
 {{- if reflect.IsSlice $v -}}
   {{- range $v -}}
-    {{- if . -}}{{- $out = $out | append . -}}{{- end -}}
+    {{- if reflect.IsMap . -}}
+      {{- $s := "" -}}
+      {{- if index . "url" }}{{- $s = index . "url" -}}
+      {{- else if index . "image" }}{{- $s = index . "image" -}}
+      {{- else if index . "src" }}{{- $s = index . "src" -}}
+      {{- else if index . "path" }}{{- $s = index . "path" -}}
+      {{- end -}}
+      {{- if $s }}{{- $out = $out | append $s -}}{{- end -}}
+    {{- else if . -}}
+      {{- $out = $out | append . -}}
+    {{- end -}}
   {{- end -}}
 {{- else if $v -}}
   {{- $out = $out | append $v -}}

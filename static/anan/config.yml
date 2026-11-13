@@ -77,9 +77,24 @@ collections:
       # 图床只收 jpg/png/webp。上传器已内置 PDF 自动分段转图：选 PDF 时逐页渲染、
       # 长页切成多段、转成图片后逐张上传。独立的 PDF 字段已移除，PDF 请传到下面的
       # 「图解步骤图」字段，这样每一页都会保留并渲染成组图。
-      - { name: cover, label: "封面图（图床，仅 jpg/png/webp）", widget: image, required: false }
-      - { name: pinImage, label: "图解步骤图（可多张；选 PDF 自动裁剪成图片上传）", widget: image, required: false }
-      - { name: author, label: 作者, widget: string, default: "DIY365", required: false }
+      # 封面图：留空则自动用「图解步骤图」第一张作为封面；可手动上传图片或贴 URL 覆盖。
+      - name: cover
+        label: "封面图（留空=用步骤图第一张；可手动上传或贴 URL）"
+        widget: image
+        required: false
+      # 图解步骤图：支持多张，可拖动排序；第一张默认作为封面图。
+      - name: pinImage
+        label: "图解步骤图（可多张；选 PDF 自动裁剪成图片；拖动可排序）"
+        widget: list
+        required: false
+        field:
+          name: url
+          label: 图片
+          widget: image
+          required: false
+        hint: "第一张默认作为封面图（除非上面单独设了封面图）。拖动每张图片左侧手柄可调整顺序。"
+      # 作者：留空则不显示
+      - { name: author, label: 作者（留空则不显示）, widget: string, default: "", required: false }
       - { name: submittedBy, label: 投稿人, widget: string, required: false }
       - { name: body, label: "图解步骤（Markdown）", widget: markdown, required: false }
 
