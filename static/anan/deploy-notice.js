@@ -1,4 +1,4 @@
-/* Decap CMS 发布后提醒：内容进了 GitHub，但前端是静态构建，需要推送上线。 */
+/* Decap CMS 发布成功提示：内容会自动提交到 GitHub 并由 CI 部署上线。 */
 (function () {
   'use strict';
   if (!window.CMS || typeof CMS.registerEventListener !== 'function') return;
@@ -31,9 +31,9 @@
     box.id = 'wb-deploy-notice';
     box.setAttribute('role', 'status');
     box.innerHTML =
-      '<strong>✅ 发布成功！请用WorkBuddy推送上线</strong>' +
-      '<span>内容已提交到 GitHub 仓库，但网站前台是静态构建，<b>不会自动更新</b>。</span>' +
-      '<small>在 WorkBuddy 里说一声「推送上线」，重新构建并部署后读者才能看到。</small>' +
+      '<strong>✅ 发布成功！</strong>' +
+      '<span>已经发布成功，看一看前端有没有上线。</span>' +
+      '<small>内容已自动提交并部署，稍等片刻刷新前台即可看到。</small>' +
       '<button type="button">知道了</button>';
 
     box.querySelector('button').addEventListener('click', function () {
