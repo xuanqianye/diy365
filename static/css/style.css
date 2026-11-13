@@ -108,16 +108,8 @@ img { max-width: 100%; height: auto; display: block; }
     gap: 12px;
   }
   .masonry .card { margin: 0; break-inside: auto; }
-  /* Mobile: single-line title with ellipsis, like competitor cards */
-  .masonry .card-title {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: 0.9rem;
-    margin: 0 0 4px;
-  }
-  /* Mobile: hide category/tag/time meta on cover cards */
-  .masonry .card-meta { display: none; }
+  /* Mobile: slightly smaller title (truncation + hidden meta already global) */
+  .masonry .card-title { font-size: 0.9rem; margin: 0 0 4px; }
 }
 
 .card {
@@ -135,8 +127,8 @@ img { max-width: 100%; height: auto; display: block; }
 .card a:hover { text-decoration: none; }
 .card-img { width: 100%; background: #f6ece9; aspect-ratio: 3/4; object-fit: cover; }
 .card-body { padding: 12px 14px 14px; }
-.card-title { font-size: 0.98rem; font-weight: 700; margin: 0 0 6px; line-height: 1.35; }
-.card-meta { font-size: 0.78rem; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
+.card-title { font-size: 0.98rem; font-weight: 700; margin: 0 0 6px; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-meta { display: none; }
 .badge {
   display: inline-block; padding: 2px 8px; border-radius: 999px;
   background: #fdeef1; color: var(--primary-dark); font-size: 0.72rem; font-weight: 600;
