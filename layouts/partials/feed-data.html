@@ -6,7 +6,9 @@
 {{- $chunks := div (add $total (sub $per 1)) $per -}}
 {{- $items := slice -}}
 {{- range $pages -}}
-  {{- $cover := partial "first-url.html" .Params.cover -}}
+  {{- $pins := partial "url-list.html" .Params.pinImage -}}
+  {{- $pinFirst := "" -}}{{- with $pins -}}{{- $pinFirst = index . 0 -}}{{- end -}}
+  {{- $cover := partial "first-url.html" (or .Params.cover $pinFirst) -}}
   {{- $cat := "" -}}
   {{- with .Params.categories -}}{{- $cat = index . 0 -}}{{- end -}}
   {{- $tags := .Params.tags | default (slice) -}}

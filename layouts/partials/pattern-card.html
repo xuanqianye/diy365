@@ -1,6 +1,8 @@
 <article class="card">
   <a href="{{ .RelPermalink }}">
-    {{ $cover := partial "first-url.html" .Params.cover }}
+    {{ $pins := partial "url-list.html" .Params.pinImage }}
+    {{ $pinFirst := "" }}{{ with $pins }}{{ $pinFirst = index . 0 }}{{ end }}
+    {{ $cover := partial "first-url.html" (or .Params.cover $pinFirst) }}
     {{ with $cover }}
     <img class="card-img" src="{{ . }}" alt="{{ $.Title }}" loading="lazy" width="300" height="400">
     {{ else }}
@@ -10,7 +12,6 @@
       <h3 class="card-title">{{ .Title }}</h3>
       <div class="card-meta">
         {{ with .Params.categories }}<span class="badge">{{ index . 0 }}</span>{{ end }}
-        {{ with .Params.difficulty }}<span>{{ . }}</span>{{ end }}
       </div>
     </div>
   </a>

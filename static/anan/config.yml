@@ -46,7 +46,6 @@ collections:
       # 单篇 SEO：留空则回退到标题 / 描述 / 站点默认设置。
       - { name: seoTitle, label: "SEO 标题（留空用文章标题）", widget: string, required: false }
       - { name: seoDescription, label: "SEO 描述（留空用上面的「描述」）", widget: string, required: false }
-      - { name: noindex, label: "禁止搜索引擎收录此篇", widget: boolean, default: false, required: false }
       # 自定义短链接：Hugo 会用 front matter 的 slug 覆盖「文件名」那段 URL。
       # 留空则退回标题自动生成的长链接。填 2~4 个英文词即可，例如 mavi-crochet-doll。
       - { name: slug, label: "自定义短链接（留空则用标题）", widget: string, required: false,
@@ -75,18 +74,6 @@ collections:
         multiple: true
         required: false
         hint: "输入关键字即可搜索已有标签；要新增标签请到左侧「标签管理」。"
-      - name: difficulty
-        label: 难度
-        widget: select
-        required: false
-        default: Easy
-        options:
-          - { label: 简单, value: Easy }
-          - { label: 中级, value: Intermediate }
-          - { label: 高级, value: Advanced }
-      - { name: yarn, label: 线材, widget: string, required: false }
-      - { name: hook, label: 钩针型号, widget: string, required: false }
-      - { name: size, label: 成品尺寸, widget: string, required: false }
       # 图床只收 jpg/png/webp。上传器已内置 PDF 自动分段转图：选 PDF 时逐页渲染、
       # 长页切成多段、转成图片后逐张上传。独立的 PDF 字段已移除，PDF 请传到下面的
       # 「图解步骤图」字段，这样每一页都会保留并渲染成组图。

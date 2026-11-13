@@ -1,8 +1,8 @@
 {{ define "main" }}
-{{ $cover := partial "first-url.html" .Params.cover }}
-{{ $pdf := partial "first-url.html" .Params.pdf }}
 {{ $pins := partial "url-list.html" .Params.pinImage }}
 {{ $pinFirst := "" }}{{ with $pins }}{{ $pinFirst = index . 0 }}{{ end }}
+{{ $cover := partial "first-url.html" (or .Params.cover $pinFirst) }}
+{{ $pdf := partial "first-url.html" .Params.pdf }}
 {{ $shareImg := or $pinFirst $cover }}
 <article class="post">
   {{ if eq .Section "patterns" }}<button type="button" class="back-btn" aria-label="Back to previous page" onclick="if(history.length>1){history.back()}else{location.href='/patterns/'}">← Back</button>{{ end }}
@@ -10,10 +10,6 @@
   <div class="post-meta">
     {{ with .Params.categories }}<span class="badge">{{ index . 0 }}</span>{{ end }}
     {{ if not .Date.IsZero }}<span>{{ .Date.Format "Jan 2, 2006" }}</span>{{ end }}
-    {{ with .Params.difficulty }}<span>Difficulty: {{ . }}</span>{{ end }}
-    {{ with .Params.yarn }}<span>Yarn: {{ . }}</span>{{ end }}
-    {{ with .Params.hook }}<span>Hook: {{ . }}</span>{{ end }}
-    {{ with .Params.size }}<span>Size: {{ . }}</span>{{ end }}
   </div>
   {{ with $cover }}<img class="post-cover" src="{{ . }}" alt="{{ $.Title }}" loading="lazy">{{ end }}
   <div class="post-content">
