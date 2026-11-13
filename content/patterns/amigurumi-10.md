@@ -2,7 +2,7 @@
 title: Amigurumi (10)
 date: 2026-11-13
 slug: amigurumi-10
-draft: true
+draft: false
 categories:
   - Amigurumi
 tags:
