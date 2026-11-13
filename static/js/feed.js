@@ -51,7 +51,7 @@
   }
   function chunk(i) {
     if (cached[i]) return Promise.resolve(cached[i]);
-    return fetch('/data/feed/part-' + i + '.json', { cache: 'force-cache' })
+    return fetch('/data/feed/part-' + i + '.json', { cache: 'no-cache' })
       .then(function (r) { if (!r.ok) throw new Error('part ' + i); return r.json(); })
       .then(function (d) { cached[i] = d || []; return d || []; })
       .catch(function () { cached[i] = []; return []; });
@@ -170,7 +170,7 @@
   });
 
   // On load failure leave the server-rendered first-screen cards untouched
-  fetch('/data/feed/manifest.json', { cache: 'force-cache' })
+  fetch('/data/feed/manifest.json', { cache: 'no-cache' })
     .then(function (r) { if (!r.ok) throw new Error('manifest'); return r.json(); })
     .then(function (m) { manifest = m; return render(false); })
     .catch(function () { info.textContent = ''; });
