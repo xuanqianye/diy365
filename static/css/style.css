@@ -108,6 +108,14 @@ img { max-width: 100%; height: auto; display: block; }
     gap: 12px;
   }
   .masonry .card { margin: 0; break-inside: auto; }
+  /* Mobile: single-line title with ellipsis, like competitor cards */
+  .masonry .card-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.9rem;
+    margin: 0 0 4px;
+  }
 }
 
 .card {
