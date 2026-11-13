@@ -12,9 +12,9 @@ tags:
   - DIY
   - Handmade
   - Pattern
-pinImage:
-  - - https://pic1.imgdd.cc/i/034wpuZoDPuRWs3qKm7WHZ.webp
-    - https://pic1.imgdd.cc/i/034wpuhkylyWD2bcnrNjWk.webp
-    - https://pic1.imgdd.cc/i/034wpvHX2N1nA8pHRUCWyj.webp
+cover:
+  - https://pic1.imgdd.cc/i/034wpxcsUSGNSYZSVwnVVb.webp
+  - https://pic1.imgdd.cc/i/034wpxi5vW0xCUV7nW2jB0.webp
+pinImage: []
 author: ""
 ---
