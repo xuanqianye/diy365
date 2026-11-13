@@ -1,0 +1,67 @@
+/* Cookie 同意横幅 — 固定在左下角 */
+#cc-banner {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 9999;
+  max-width: 340px;
+}
+
+.cc-card {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  padding: 16px;
+  font-family: inherit;
+}
+
+.cc-text {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #333;
+}
+
+.cc-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.cc-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.cc-btn:hover { opacity: 0.85; }
+
+.cc-accept {
+  background: #e6457a;
+  color: #fff;
+}
+
+.cc-reject {
+  background: #f1f1f1;
+  color: #333;
+}
+
+/* 窄屏：横幅贴底铺满，避免遮挡内容 */
+@media (max-width: 520px) {
+  #cc-banner {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-width: none;
+  }
+  .cc-card {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+  }
+}

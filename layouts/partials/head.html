@@ -37,20 +37,12 @@
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ $pub }}" crossorigin="anonymous"></script>
 {{ end }}
 
-<!-- 51.la analytics -->
-<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
-<script>LA.init({id:"3RkAwKLdBIfgtD2C",ck:"3RkAwKLdBIfgtD2C"})</script>
-
-<!-- Google Analytics 4 (read from params.googleAnalytics, fallback to hardcoded ID) -->
-{{ $ga := site.Params.googleAnalytics | default "G-K9VCKX9RVS" }}
-{{ if $ga }}
-<script async src="https://www.googletagmanager.com/gtag/js?id={{ $ga }}"></script>
+<!-- Analytics IDs (loaded only after cookie consent — see js/cookie-consent.js) -->
 <script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', '{{ $ga }}');
+  window.__GA_ID__ = "{{ site.Params.googleAnalytics | default "G-K9VCKX9RVS" }}";
+  window.__LA_ID__ = "3RkAwKLdBIfgtD2C";
+  window.__LA_CK__ = "3RkAwKLdBIfgtD2C";
 </script>
-{{ end }}
+<link rel="stylesheet" href="{{ "css/cookie-consent.css" | relURL }}">
 
 {{ partial "seo-schema.html" . }}
