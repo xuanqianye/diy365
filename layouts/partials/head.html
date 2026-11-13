@@ -41,14 +41,15 @@
 <script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
 <script>LA.init({id:"3RkAwKLdBIfgtD2C",ck:"3RkAwKLdBIfgtD2C"})</script>
 
-<!-- Google Analytics 4 (injected only when a real G- Measurement ID is set) -->
-{{ with $seo.googleAnalytics }}
-<script async src="https://www.googletagmanager.com/gtag/js?id={{ . }}"></script>
+<!-- Google Analytics 4 (read from params.googleAnalytics, fallback to hardcoded ID) -->
+{{ $ga := site.Params.googleAnalytics | default "G-K9VCKX9RVS" }}
+{{ if $ga }}
+<script async src="https://www.googletagmanager.com/gtag/js?id={{ $ga }}"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-  gtag('config', '{{ . }}');
+  gtag('config', '{{ $ga }}');
 </script>
 {{ end }}
 
