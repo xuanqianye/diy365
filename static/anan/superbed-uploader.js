@@ -47,13 +47,47 @@
       .replace(/\s+/g, ' ')
       .trim();
   }
+  /* 定位「标题」输入框：Decap 的 label 用 htmlFor 关联 input 的 id，可精准定位 */
+  function findTitleInput() {
+    var labels = document.querySelectorAll('label[for]');
+    for (var i = 0; i < labels.length; i++) {
+      var lab = labels[i];
+      var t = (lab.textContent || '').replace(/\s+/g, '');
+      if (t === '标题' || t === '标题*') {
+        var inp = document.getElementById(lab.htmlFor);
+        if (inp) return inp;
+      }
+    }
+    return null;
+  }
+  /* 用原生 setter 写值并派发 input 事件，触发 React onChange（Decap 会同步 store + 重渲染）。
+     注意：StringControl 的输入框 value 来自组件本地 state，光改 store 不会重渲染，
+     所以必须走 DOM 事件这条「官方」路径才能真正填进输入框并保存。 */
+  function setNativeValue(input, value) {
+    try {
+      var proto = Object.getPrototypeOf(input);
+      var desc = Object.getOwnPropertyDescriptor(proto, 'value');
+      if (desc && desc.set) desc.set.call(input, value); else input.value = value;
+    } catch (e) { input.value = value; }
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  }
   function applyAutoTitle(name) {
     if (!name) return;
     try {
-      if (typeof window.__diy365SetField !== 'function') return;
-      var cur = (typeof window.__diy365GetField === 'function') ? window.__diy365GetField('title') : undefined;
-      if (cur && String(cur).trim() !== '') return;   // 已有标题则不覆盖
-      window.__diy365SetField('title', cleanTitle(name));
+      var inp = findTitleInput();
+      if (!inp) {
+        // 兜底：DOM 找不到输入框时仍尝试走 store 写入（relation 等字段用）
+        if (typeof window.__diy365SetField === 'function') {
+          var c0 = (typeof window.__diy365GetField === 'function') ? window.__diy365GetField('title') : undefined;
+          if (c0 && String(c0).trim() !== '') return;
+          window.__diy365SetField('title', cleanTitle(name));
+        }
+        return;
+      }
+      if ((inp.value || '').trim() !== '') return;   // 已有标题则不覆盖
+      setNativeValue(inp, cleanTitle(name));
+      console.info('[autoTitle] 已用上传文件名填充标题：', cleanTitle(name));
     } catch (e) { console.error('applyAutoTitle failed', e); }
   }
 
