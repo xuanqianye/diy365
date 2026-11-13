@@ -1,17 +1,14 @@
 ---
-title: 测试更新
-description: 测试
+size: ""
+draft: false
+hook: ""
+yarn: ""
+title: Illustrated crochet pattern for pirates
+description: Illustrated crochet pattern for pirates
 date: 2026-11-13
 slug: pattern-mwdlmsdy
-draft: false
 categories:
   - Amigurumi
-tags:
-  - Amigurumi
-difficulty: Easy
-yarn: ""
-hook: ""
-size: ""
 pinImage:
   - https://pic1.imgdd.cc/i/034wJcjuwNuTVgeC3sYRC2.webp
   - https://pic1.imgdd.cc/i/034wJckwCd2qVYXNmO6ZA9.webp
@@ -32,7 +29,10 @@ pinImage:
   - https://pic1.imgdd.cc/i/034wJf2pgdRsJ0RlOWAZhW.webp
 author: ""
 pdf: ""
+tags:
+  - Amigurumi
 cover:
   - https://pic1.imgdd.cc/i/034wJchoo3CFBOghqQlCge.webp
 submittedBy: ""
+difficulty: Easy
 ---
