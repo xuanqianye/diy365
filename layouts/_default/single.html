@@ -17,7 +17,7 @@
   </div>
   {{ with $pins }}
   <div class="pattern-gallery">
-    {{ range . }}<img class="pattern-step" src="{{ . }}" alt="{{ $.Title }} pattern step" loading="lazy">{{ end }}
+    {{ range . }}{{ if ne . $cover }}<img class="pattern-step" src="{{ . }}" alt="{{ $.Title }} pattern step" loading="lazy">{{ end }}{{ end }}
   </div>
   {{ end }}
   {{ with $pdf }}<p><a class="btn" href="{{ . }}" target="_blank" rel="noopener">Download PDF</a></p>{{ end }}
