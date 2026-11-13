@@ -122,7 +122,7 @@ hugo server -D        # -D 包含草稿（draft:true 的投稿）
 ## 8. 法律页
 
 `content/pages/` 下 8 页（Privacy / Terms / About / Disclaimer / Copyright Policy / User Agreement / Contact / Copyright Removal Request），正文已从原线上站 `diy365.cc` 备份至 `backup/diy365-cc/`，并已套用。
-
+# diy365
 ---
 
 ## 9. 安全提醒
