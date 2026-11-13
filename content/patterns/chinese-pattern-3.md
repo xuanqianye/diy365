@@ -14,7 +14,12 @@ tags:
   - Pattern
 cover: null
 pinImage:
-  - - https://pic1.imgdd.cc/i/034wq55w2ZEaZvYYQ0gmLs.webp
-    - https://pic1.imgdd.cc/i/034wq59FWe2MuKPz7l1Sp1.webp
+  - - https://pic1.imgdd.cc/i/034wq701NZRFolLmdrVjbc.webp
+    - https://pic1.imgdd.cc/i/034wq7QIeyamVC2xrciph6.webp
+    - https://pic1.imgdd.cc/i/034wq7TGtyO4VtiOWa2Rw1.webp
+    - https://pic1.imgdd.cc/i/034wq7XAqbNCZ4AFF8rSX5.webp
+    - https://pic1.imgdd.cc/i/034wq7YqMxWZGJizpcgLKp.webp
+    - https://pic1.imgdd.cc/i/034wq7ahUhzIAwqE1AMiJr.webp
+    - https://pic1.imgdd.cc/i/034wq7cJhXIb5TpsiDbAj0.webp
 author: ""
 ---
