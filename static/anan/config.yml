@@ -36,6 +36,8 @@ collections:
     folder: "content/patterns"
     create: true
     slug: "{{slug}}"
+    # 集合列表（网格视图）卡片缩略图：用 cover 字段；封面为空时由上传器自动填第一张步骤图。
+    thumbnail: cover
     fields:
       - { name: title, label: 标题, widget: string, required: false }
       - { name: description, label: 描述, widget: string, required: false }

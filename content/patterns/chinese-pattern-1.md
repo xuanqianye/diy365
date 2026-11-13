@@ -1,4 +1,6 @@
 ---
+cover: "https://pic1.imgdd.cc/i/034wp9owIJ7KbAXeChPugH.webp"
+
 title: Chinese Pattern
 date: 2026-11-13
 draft: false

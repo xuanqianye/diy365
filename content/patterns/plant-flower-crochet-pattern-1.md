@@ -1,4 +1,6 @@
 ---
+cover: "https://pic1.imgdd.cc/i/034wormflASuuGxNHOXwIv.webp"
+
 title: Plant & Flower Crochet Pattern
 date: 2026-11-13
 draft: false

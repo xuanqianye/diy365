@@ -91,6 +91,40 @@
     } catch (e) { console.error('applyAutoTitle failed', e); }
   }
 
+  /* ---------- 自动封面：上传步骤图后，若 cover 为空则把第一张图填为封面 ----------
+     仅当 cover 当前为空时写入（用户已手动设封面则不覆盖）。这样集合列表缩略图
+     会自动出现，不用每篇都手动设封面。
+     封面图字段（image widget）的输入框 value 同样来自组件本地 state，故也走 DOM 事件路径。 */
+  function findCoverInput() {
+    var labels = document.querySelectorAll('label[for]');
+    for (var i = 0; i < labels.length; i++) {
+      var lab = labels[i];
+      var t = (lab.textContent || '').replace(/\s+/g, '');
+      if (t.indexOf('封面图') === 0) {                 // 匹配「封面图（留空=…）」
+        var inp = document.getElementById(lab.htmlFor);
+        if (inp) return inp;
+      }
+    }
+    return null;
+  }
+  function applyAutoCover(urls) {
+    if (!urls || !urls.length) return;
+    try {
+      // 已设封面则跳过
+      var cur = (typeof window.__diy365GetField === 'function') ? window.__diy365GetField('cover') : undefined;
+      if (cur && String(cur).trim() !== '') return;
+      var first = urls[0];
+      var inp = findCoverInput();
+      if (inp) {
+        if ((inp.value || '').trim() !== '') return;   // 输入框已有则不覆盖
+        setNativeValue(inp, first);
+        console.info('[autoCover] 已用第一张步骤图填充封面：', first);
+      } else if (typeof window.__diy365SetField === 'function') {
+        window.__diy365SetField('cover', first);        // 兜底：直接写 store（保存后列表即生效）
+      }
+    } catch (e) { console.error('applyAutoCover failed', e); }
+  }
+
   var SuperbedLibrary = {
     name: 'superbed',
     config: {},
@@ -311,6 +345,8 @@
             } catch (e) { console.error(e); }
             // 上传完成后，用首个文件名自动填充标题（仅当标题为空）
             applyAutoTitle(pendingTitleName);
+            // 若封面为空，自动用第一张步骤图作封面（集合列表缩略图）
+            applyAutoCover(urls);
             setTimeout(closeModal, 700);
           });
         });
