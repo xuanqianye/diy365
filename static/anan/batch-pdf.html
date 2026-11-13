@@ -54,12 +54,14 @@
   <label for="files">选择 PDF 文件（可多选，每个 = 一篇草稿）</label>
   <input type="file" id="files" accept=".pdf,application/pdf" multiple />
   <div class="hint">
-    PDF 限制（与单篇上传一致）：每本 ≤ 40MB、≤ 30 页；长页会自动切片成多张图。每个 PDF 会变成若干张步骤图，第一张自动作封面。
-    处理在浏览器本地完成，可能耗时较久（页数多时请耐心等待，不要关闭页面）。
+    PDF 限制：每本 ≤ 100MB、≤ 100 页；长页会自动切片成多张图。每个 PDF 会变成若干张步骤图，第一张自动作封面。
+    处理在浏览器本地完成，可能耗时较久（页数多时请耐心等待，不要关闭页面）。可点「暂停」暂停当前批次，再点「继续」从下一本恢复（暂停在当前本处理完后生效）。
   </div>
 
   <div class="row">
-    <button class="btn-primary" id="procBtn">① 裁剪并上传图床</button>
+    <button class="btn-primary" id="procBtn">① 开始处理</button>
+    <button class="btn-ghost" id="pauseBtn" disabled>⏸ 暂停</button>
+    <button class="btn-primary" id="resumeBtn" disabled>▶ 继续</button>
     <button class="btn-primary" id="commitBtn" disabled>② 生成草稿并提交</button>
     <button class="btn-ghost" id="clearBtn">清空</button>
   </div>
@@ -82,8 +84,8 @@
   // ---- pdf.js（站点已内置）----
   var PDF_LIB = "/js/vendor/pdf.min.mjs";
   var PDF_WORKER = "/js/vendor/pdf.worker.min.mjs";
-  var MAX_PDF_BYTES = 40 * 1024 * 1024;
-  var MAX_PDF_PAGES = 30;
+  var MAX_PDF_BYTES = 100 * 1024 * 1024;
+  var MAX_PDF_PAGES = 100;
   var MAX_CANVAS_W = 1500;
   var SLICE_RATIO = 1.7;
   var MAX_SLICES = 6;
@@ -274,54 +276,89 @@
     return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; });
   }
 
-  function process() {
-    var files = $("files").files;
-    if (!files || !files.length) { log("❌ 请先选择至少一个 PDF。", "err"); return; }
-    var cats = splitList($("cats").value);
-    var tags = splitList($("tags").value);
-    ARTICLES = [];
-    $("commitBtn").disabled = true;
-    $("procBtn").disabled = true;
-    var used = {};
+  // ---- 可控处理队列（支持开始 / 暂停 / 继续）----
+  var queue = [];        // 待处理 file 列表
+  var usedSlugs = {};    // slug 去重
+  var catsNow = [], tagsNow = [];
+  var processing = false; // 是否有批次在进行（含暂停）
+  var paused = false;
+  var totalFiles = 0;
 
-    var chain = Promise.resolve();
-    Array.prototype.forEach.call(files, function (file) {
-      if (!/\.pdf$/i.test(file.name) && file.type !== "application/pdf") {
-        log("⚠️ 跳过非 PDF 文件：" + file.name, "err");
-        return;
-      }
-      chain = chain.then(function () {
-        var a = {
-          file: file,
-          title: cleanTitle(file.name),
-          slug: slugify(file.name, used),
-          cats: cats,
-          tags: tags,
-          images: [],
-          cover: "",
-          error: ""
-        };
-        log("▶ 开始处理：" + file.name + " → 标题「" + a.title + "」");
-        return processPdf(file, function (msg) { log("   " + msg); }).then(function (urls) {
-          a.images = urls;
-          a.cover = urls[0] || "";
-          ARTICLES.push(a);
-          log("✓ " + file.name + " 完成，共 " + urls.length + " 张图。", "ok");
-        }).catch(function (e) {
-          a.error = e.message;
-          ARTICLES.push(a);
-          log("❌ " + file.name + " 处理失败：" + e.message, "err");
-        });
-      });
-    });
+  function setProcUI(state) {
+    // state: 'idle' | 'running' | 'paused'
+    if (state === "idle") {
+      $("procBtn").disabled = false; $("pauseBtn").disabled = true; $("resumeBtn").disabled = true;
+    } else if (state === "running") {
+      $("procBtn").disabled = true; $("pauseBtn").disabled = false; $("resumeBtn").disabled = true;
+    } else if (state === "paused") {
+      $("procBtn").disabled = true; $("pauseBtn").disabled = true; $("resumeBtn").disabled = false;
+    }
+  }
 
-    chain.then(function () {
+  function runNext() {
+    if (paused) {
+      setProcUI("paused");
+      log("⏸ 已暂停（当前本处理完毕后停止）。点「继续」从下一本恢复。", "ok");
+      return;
+    }
+    if (!queue.length) {
+      processing = false;
+      setProcUI("idle");
       var ok = ARTICLES.filter(function (a) { return a.images.length; }).length;
       renderPreview();
-      $("procBtn").disabled = false;
-      if (ok) { $("commitBtn").disabled = false; log("全部处理完：成功 " + ok + " 篇，失败 " + (ARTICLES.length - ok) + " 篇。确认无误点「生成草稿并提交」。", "ok"); }
+      if (ok) { $("commitBtn").disabled = false; log("✅ 全部处理完：成功 " + ok + " 篇，失败 " + (ARTICLES.length - ok) + " 篇。确认无误点「生成草稿并提交」。", "ok"); }
       else { log("没有成功的 PDF，无法提交。", "err"); }
-    });
+      return;
+    }
+    var file = queue.shift();
+    if (!/\.pdf$/i.test(file.name) && file.type !== "application/pdf") {
+      log("⚠️ 跳过非 PDF 文件：" + file.name, "err");
+      return runNext();
+    }
+    var a = {
+      file: file, title: cleanTitle(file.name), slug: slugify(file.name, usedSlugs),
+      cats: catsNow, tags: tagsNow, images: [], cover: "", error: ""
+    };
+    log("▶ [" + (ARTICLES.length + 1) + "/" + totalFiles + "] 开始处理：" + file.name + " → 标题「" + a.title + "」");
+    processPdf(file, function (msg) { log("   " + msg); }).then(function (urls) {
+      a.images = urls; a.cover = urls[0] || "";
+      ARTICLES.push(a);
+      log("✓ " + file.name + " 完成，共 " + urls.length + " 张图。", "ok");
+    }).catch(function (e) {
+      a.error = e.message; ARTICLES.push(a);
+      log("❌ " + file.name + " 处理失败：" + e.message, "err");
+    }).then(function () { runNext(); });
+  }
+
+  function startProcessing() {
+    var files = $("files").files;
+    if (!files || !files.length) { log("❌ 请先选择至少一个 PDF。", "err"); return; }
+    if (processing) { log("⚠️ 已有批次在进行，请先暂停或清空。", "err"); return; }
+    catsNow = splitList($("cats").value);
+    tagsNow = splitList($("tags").value);
+    ARTICLES = []; usedSlugs = {}; queue = [];
+    Array.prototype.forEach.call(files, function (f) { queue.push(f); });
+    totalFiles = queue.length;
+    processing = true; paused = false;
+    $("commitBtn").disabled = true;
+    setProcUI("running");
+    log("开始处理 " + totalFiles + " 个 PDF（可随时「暂停」。每本 ≤ 100MB、≤ 100 页）。");
+    runNext();
+  }
+
+  function pauseProcessing() {
+    if (!processing || paused) return;
+    paused = true;
+    log("⏸ 正在暂停…（当前本处理完后停止）", "ok");
+    setProcUI("paused");
+  }
+
+  function resumeProcessing() {
+    if (!processing || !paused) return;
+    paused = false;
+    setProcUI("running");
+    log("▶ 继续处理剩余 " + queue.length + " 本…", "ok");
+    runNext();
   }
 
   // ---- GitHub Git Tree API 一次性提交所有草稿 ----
@@ -409,11 +446,14 @@
       .then(function () { $("commitBtn").disabled = false; });
   }
 
-  $("procBtn").addEventListener("click", process);
+  $("procBtn").addEventListener("click", startProcessing);
+  $("pauseBtn").addEventListener("click", pauseProcessing);
+  $("resumeBtn").addEventListener("click", resumeProcessing);
   $("commitBtn").addEventListener("click", commitDrafts);
   $("clearBtn").addEventListener("click", function () {
     $("files").value = ""; $("preview").innerHTML = ""; ARTICLES = [];
-    $("commitBtn").disabled = true; $("status").innerHTML = "";
+    queue = []; processing = false; paused = false; usedSlugs = {};
+    setProcUI("idle"); $("status").innerHTML = "";
   });
 
   window.addEventListener("DOMContentLoaded", function () {
