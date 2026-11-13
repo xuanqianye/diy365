@@ -56,10 +56,10 @@
     b.setAttribute('aria-label', 'Cookie 同意');
     b.innerHTML =
       '<div class="cc-card">' +
-        '<p class="cc-text">我们使用 Cookie 与同类技术（Google Analytics、51.la）来分析网站流量。点击「同意」即表示你允许我们收集匿名访问数据；「拒绝」则不会加载任何追踪脚本。</p>' +
+        '<p class="cc-text">We use cookies and similar technologies (Google Analytics, 51.la) to analyze site traffic. Clicking "Accept" allows us to collect anonymous visit data; "Decline" will not load any tracking scripts.</p>' +
         '<div class="cc-actions">' +
-          '<button type="button" class="cc-btn cc-accept" id="cc-accept">同意</button>' +
-          '<button type="button" class="cc-btn cc-reject" id="cc-reject">拒绝</button>' +
+          '<button type="button" class="cc-btn cc-accept" id="cc-accept">Accept</button>' +
+          '<button type="button" class="cc-btn cc-reject" id="cc-reject">Decline</button>' +
         '</div>' +
       '</div>';
     document.body.appendChild(b);
