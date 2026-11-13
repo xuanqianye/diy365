@@ -11,6 +11,5 @@
      data-ad-format="auto"
      data-full-width-responsive="true"></ins>
 <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-{{ else }}
-<div class="ad-slot{{ if $inline }} inline{{ end }}"><span class="ad-label">Advertisement</span></div>
 {{ end }}
+{{/* 占位/空 ID 时不渲染任何广告位（含占位块），避免页面出现空广告框；申请到 AdSense 后填入真实 Publisher/Slot 即自动显示。 */}}
