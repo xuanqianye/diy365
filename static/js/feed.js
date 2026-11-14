@@ -95,7 +95,11 @@
       var list = pool.slice(0, Math.min(need, pool.length));
       grid.innerHTML = list.map(card).join('');
       cursor = list.length;
-      var done = loaded >= (manifest ? manifest.chunks : 0);
+      // "done" must compare how many cards are shown vs how many items we have,
+      // NOT how many JSON chunks were fetched. All items may live in a single
+      // chunk (e.g. 51 patterns < 500/chunk), so loaded>=chunks after the very
+      // first fetch would wrongly mark the feed complete and hide "Load more".
+      var done = cursor >= pool.length;
       extras('<div class="feed-sentinel" id="feedSentinel">' +
         (done ? 'All loaded | ' + pool.length + ' patterns'
               : '<button type="button" class="feed-loadmore" id="feedMore">Load more ↓</button>') +

@@ -34,7 +34,7 @@
 <body>
 <div class="wrap">
   <h1>PDF 批量发布图解</h1>
-  <p class="sub">一次选多个 PDF，每个 PDF 生成一篇<strong>草稿</strong>（图片来自 PDF 逐页裁剪并上传图床）。提交后到 Decap 后台 <code>/anan/</code> 逐篇点「发布」，或用 <a href="drafts.html">草稿管理</a> 批量查看 / 发布。</p>
+  <p class="sub">一次选多个 PDF，每个 PDF 生成一篇<strong>草稿</strong>（图片来自 PDF 逐页裁剪并上传图床）。提交后请到 <a href="drafts.html">草稿管理页 <code>/anan/drafts.html</code></a> 点「发布」或「全部发布」即可上线（<strong>推荐</strong>，直接改文件更可靠）。也可在 Decap 后台取消「草稿（不发布）」勾选，但后台的「已发布」状态可能显示不准。</p>
 
   <label for="token">GitHub Token（自动读取 Decap 登录态，失败再手动粘贴）</label>
   <input type="password" id="token" placeholder="ghp_xxx 或 github_pat_xxx（留空则尝试复用 Decap 登录态）" autocomplete="off" />
@@ -437,7 +437,8 @@
           log("   • 「" + a.title + "」 → 草稿链接：/anan/#/collections/patterns/" + encodeURIComponent(a.slug) +
             " ｜ 发布后地址：/patterns/" + encodeURIComponent(a.slug) + "/", "ok");
         });
-        log("到 Decap 打开每篇草稿，取消「草稿（不发布）」勾选并保存，即完成发布。部署通常 1–3 分钟。");
+        log("👉 下一步：打开草稿管理页 /anan/drafts.html → 点「加载草稿列表」→ 逐篇点「发布」或「全部发布」。发布后 GitHub Actions 自动部署，通常 1–3 分钟上线。", "ok");
+        log("（不建议在 Decap 里手动取消「草稿」勾选：Decap 后台可能显示「已发布」但文件里 draft 仍为 true，前端不收录。）");
       })
       .catch(function (err) {
         log("❌ 提交失败：" + err.message, "err");
