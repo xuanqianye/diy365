@@ -279,6 +279,9 @@
   var MAX_FILES = 5;
   var MAX_BYTES = 15 * 1024 * 1024;
   var MARK = '\n\nSupporting evidence (uploaded images):\n';
+  var SUCCESS_TITLE = 'Submission successful!';
+  var SUCCESS_TEXT = 'We will process your copyright removal request promptly. ' +
+                     'Any infringing content will be removed in a timely manner.';
 
   var zone, input, list, statusEl, countEl, output, form, infringing;
   var items = [];
@@ -374,6 +377,76 @@
     });
   }
 
+  /* ---------- DMCA confirmation ----------------------------------
+     The Worker's generic "Thank you! Your pattern is pending review" page
+     is wrong for a copyright notice. We post the form ourselves (simple
+     urlencoded request, CORS is open on the Worker) and render the correct
+     confirmation in place, so this works without redeploying the Worker.
+     ------------------------------------------------------------------ */
+  function showSuccess(form) {
+    var card = document.createElement('div');
+    card.className = 'form-wrap';
+    card.setAttribute('role', 'status');
+    card.innerHTML =
+      '<h2 style="margin-top:0">' + SUCCESS_TITLE + '</h2>' +
+      '<p>' + SUCCESS_TEXT + '</p>' +
+      '<p><a class="btn" href="/">Back to the site</a></p>';
+    if (form.parentNode) form.parentNode.replaceChild(card, form);
+    if (card.scrollIntoView) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function showError(form, msg) {
+    var btn = form.querySelector('button[type="submit"]');
+    if (btn) { btn.disabled = false; btn.textContent = 'Submit Removal Request'; }
+    var old = form.querySelector('.dmca-submit-error');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+    var box = document.createElement('div');
+    box.className = 'dmca-submit-error';
+    box.style.cssText = 'margin:12px 0;padding:12px 14px;border:1px solid #e8b4bd;' +
+      'border-radius:10px;background:#fff5f7;color:#a1324a;font-size:.9rem';
+    box.innerHTML = '<strong>' + esc(msg) + '</strong>' +
+      '<div style="margin-top:8px"><a href="#" class="dmca-fallback" ' +
+      'style="color:#c2536f;font-weight:600">Submit using the standard page</a></div>';
+    form.insertBefore(box, form.firstChild);
+    var link = box.querySelector('.dmca-fallback');
+    if (link) link.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      form.submit();   // native POST -> Worker page, bypasses this handler
+    });
+    if (box.scrollIntoView) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function submitDmca(form) {
+    var btn = form.querySelector('button[type="submit"]');
+    if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
+    var params = new URLSearchParams();
+    Array.prototype.forEach.call(form.elements, function (el) {
+      if (!el.name || el.disabled) return;
+      var t = (el.type || '').toLowerCase();
+      if (t === 'file' || t === 'submit' || t === 'button' || t === 'reset' || t === 'image') return;
+      if ((t === 'checkbox' || t === 'radio') && !el.checked) return;
+      params.append(el.name, el.value == null ? '' : el.value);
+    });
+    fetch(form.action, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+      body: params.toString()
+    }).then(function (r) {
+      return r.text().then(function (txt) {
+        if (!r.ok || /Submission not completed/i.test(txt)) {
+          var m = txt.match(/<p>([\s\S]*?)<\/p>/);
+          var raw = m ? m[1].replace(/<[^>]*>/g, '').trim() : ('HTTP ' + r.status);
+          throw new Error(raw || 'Submission failed');
+        }
+        return txt;
+      });
+    }).then(function () {
+      showSuccess(form);
+    }).catch(function (err) {
+      showError(form, err && err.message ? err.message : 'Network error. Please try again.');
+    });
+  }
+
   function init() {
     zone = $('dmcaDrop');
     input = $('dmcaFiles');
@@ -415,6 +488,10 @@
           var clean = String(infringing.value || '').split(MARK)[0].trim();
           infringing.value = clean + (items.length ? MARK + items.join('\n') : '');
         }
+        // Legacy browsers / missing endpoint: keep the native form POST.
+        if (typeof fetch !== 'function' || typeof URLSearchParams !== 'function' || !form.action) return;
+        e.preventDefault();
+        submitDmca(form);
       });
     }
     render();
