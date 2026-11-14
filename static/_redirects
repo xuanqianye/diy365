@@ -9,3 +9,9 @@
 /patterns/mavi-crochet-doll-pattern-by-burcu-bülbül-with-blue-coat-and-snowman-accessory /patterns/mavi-crochet-doll/ 301
 /patterns/free-amigurumi-sunflower-matryoshka-doll-crochet-pattern-by-emmi-hai-with-detailed-instructions-and-color-guide/ /patterns/sunflower-matryoshka-doll/ 301
 /patterns/free-amigurumi-sunflower-matryoshka-doll-crochet-pattern-by-emmi-hai-with-detailed-instructions-and-color-guide /patterns/sunflower-matryoshka-doll/ 301
+
+# 2026-11-14: a DMCA test notice was accidentally published as a pattern.
+# The markdown is deleted, but an old CDN cache entry can still serve the page.
+# Redirect both spellings so the cached copy is never shown to visitors.
+/patterns/dmca-mwghkg8p/ / 301
+/patterns/dmca-mwghkg8p / 301
