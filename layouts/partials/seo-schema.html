@@ -2,7 +2,13 @@
        - Article (with cover image / published+modified dates / publisher) on pages
        - BreadcrumbList on every non-home page
        - WebSite on the home page
-       Uses jsonify so titles/descriptions with quotes can't break the JSON. */ -}}
+       Uses jsonify so titles/descriptions with quotes can't break the JSON.
+       NOTE: `jsonify` returns template.HTML since Hugo 0.170.0. Inside a
+       <script> (JS context) Go's html/template then wraps it in quotes and
+       escapes it, producing a JSON *string* instead of an object. Google
+       Search Console reports that as "Top-level 'string' invalid".
+       `safeJS` marks it as template.JS so the JSON object is emitted raw.
+       Keep it on ALL three blocks. */ -}}
 {{- $seo := merge site.Params (hugo.Data.seo | default dict) -}}
 {{- $brand := $seo.brand | default site.Title -}}
 {{- $pageTitle := .Params.seoTitle | default .Title -}}
@@ -25,7 +31,7 @@
   "mainEntityOfPage" (dict "@type" "WebPage" "@id" .Permalink) -}}
 {{- with $imgAbs }}{{ $article = merge $article (dict "image" .) }}{{ end -}}
 {{- if not .Date.IsZero }}{{ $article = merge $article (dict "datePublished" (.Date.Format "2006-01-02T15:04:05Z07:00") "dateModified" (.Lastmod.Format "2006-01-02T15:04:05Z07:00")) }}{{ end -}}
-<script type="application/ld+json">{{ $article | jsonify }}</script>
+<script type="application/ld+json">{{ $article | jsonify | safeJS }}</script>
 {{ end }}
 
 {{ if not .IsHome }}
@@ -37,9 +43,9 @@
 {{- end -}}
 {{- $crumbs = $crumbs | append (dict "@type" "ListItem" "position" $pos "name" $pageTitle "item" .Permalink) -}}
 {{- $breadcrumb := dict "@context" "https://schema.org" "@type" "BreadcrumbList" "itemListElement" $crumbs -}}
-<script type="application/ld+json">{{ $breadcrumb | jsonify }}</script>
+<script type="application/ld+json">{{ $breadcrumb | jsonify | safeJS }}</script>
 {{ end }}
 
 {{ if .IsHome }}
-<script type="application/ld+json">{{ dict "@context" "https://schema.org" "@type" "WebSite" "name" $brand "url" .Site.BaseURL | jsonify }}</script>
+<script type="application/ld+json">{{ dict "@context" "https://schema.org" "@type" "WebSite" "name" $brand "url" .Site.BaseURL | jsonify | safeJS }}</script>
 {{ end }}

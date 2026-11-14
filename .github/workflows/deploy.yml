@@ -41,7 +41,11 @@ jobs:
       - name: Setup Hugo (extended)
         uses: peaceiris/actions-hugo@v3
         with:
-          hugo-version: "latest"
+          # Pin the version. "latest" silently jumped to 0.170.0 on 2026-11-14,
+          # which changed jsonify's return type and broke JSON-LD output
+          # (Search Console: "Top-level 'string' invalid"). Bump deliberately,
+          # verify a local build before changing this value.
+          hugo-version: "0.170.0"
           extended: true
 
       - name: Build
