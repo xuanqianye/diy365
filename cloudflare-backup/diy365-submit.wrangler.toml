@@ -1,0 +1,9 @@
+name = "diy365-submit"
+main = "worker.js"
+compatibility_date = "2024-11-12"
+account_id = "3a4f3c51777bd916bb80e202947bd84e"
+
+# 投稿内容持久化（无需 GitHub PAT 即可接收投稿）
+[[kv_namespaces]]
+binding = "SUBMISSIONS"
+id = "c25eb5052d7e44c0b59732849fbf0e20"

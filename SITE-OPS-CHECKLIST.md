@@ -156,10 +156,11 @@ Hugo 静态站点  →  GitHub 仓库(xuanqianye/diy365, main)  →  GitHub Acti
 
 ## 7. 备份盘点 & 快速排障
 
-### 当前备份状态（截至 2026-11-13）
+### 当前备份状态（截至 2026-11-14）
 - **代码**：GitHub 仓库（异地）+ E 盘本地 ✅
 - **Cloudflare 配置**：`cloudflare-backup/diy365-auth.worker.js`（白名单 Worker 完整可部署代码）+ `cloudflare-backup/rate-limiting-limit-submit.md`（限流规则参数+重建步骤），已进 git ✅
-- **未进备份**：GitHub 2FA 设置（账号端开关，恢复码自行保管）；Superbed token（本地 `.env`，勿提交）
+- **投稿 Worker**（2026-11-14 补）：`cloudflare-backup/diy365-submit.worker.js` + `cloudflare-backup/diy365-submit.wrangler.toml`（`diy365-submit` 完整源码与 KV / account_id 配置），已进 git ✅。⚠️ 本地这份是「按表单类型显示正确成功文案」的修正版，**线上 Worker 仍是旧版**，需在 Cloudflare 控制台 → Workers → `diy365-submit` 粘贴部署后才一致
+- **未进备份**：GitHub 2FA 设置（账号端开关，恢复码自行保管）；Superbed token（本地 `.env`，勿提交）；Worker 环境变量 / Secrets：`GITHUB_CLIENT_SECRET`、`ALLOWED_GITHUB_LOGIN`、`CAPTCHA_SECRET`、`ADMIN_KEY`、可选 `GH_TOKEN`（Cloudflare 控制台配置，勿提交）
 
 ### 日常运维速查
 - 本地改完 → `git add` / `commit` / `push` → 自动部署（几分钟生效）
