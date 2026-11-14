@@ -99,7 +99,8 @@ Hugo 静态站点  →  GitHub 仓库(xuanqianye/diy365, main)  →  GitHub Acti
 - [ ] **旧 Worker `diy365` 是否删除**
 - [ ] **阅读量计数**：用户决定保持现状（如未来做，需在 Cloudflare 控制台建 KV 命名空间 `VIEW_KV` 绑到 Pages 项目，再重部署）
 - [ ] **GA4 激活**：用 VPN/海外网络打开一次 diy365.cc，GA 实时报告出现访问即通
-- [ ] **AdSense 获批后填回 `static/ads.txt`**：占位版 `pub-0000000000000000` 已于 2026-11-14 删除。原因：Google 抓到全 0 的 pub ID 会判定「该域名未授权任何有效卖家」，比干脆没有 ads.txt 更糟；审核期间保持 404 是正常且允许的（ads.txt 非申请硬性条件）。
+- [ ] **AdSense 获批后填回 `static/ads.txt`**：占位版 `pub-0000000000000000` 已于 2026-11-14 删除。原因：Google 抓到全 0 的 pub ID 会判定「该域名未授权任何有效卖家」，比不提供 ads.txt 更糟；ads.txt 本身不是申请硬性条件。
+  - 删除后该路径**不是严格 404**：`wrangler.toml` 的 `not_found_handling = "404-page"` 会让它返回 200 + 404 页 HTML（站点所有不存在的路径都如此）。实测已不含任何 `pub-` 声明；官方「缺发布商 ID 停止购买广告」的后果针对 Ad Manager 程序化竞价，AdSense 直投不受影响，无需为此改动全站 404 行为。
   - 账号批准后在 AdSense 后台「账号 → 设置 → 账号信息」取 16 位发布商 ID；
   - 新建 `static/ads.txt`，**只写一行**：`google.com, pub-<你的16位ID>, DIRECT, f08c47fec0942fa0`；
   - `git add static/ads.txt && commit && push` 部署后，用 `curl https://diy365.cc/ads.txt` 确认返回该行；
