@@ -238,24 +238,72 @@
     }
     render();
 
-    /* ---------- server-issued verification ---------- */
+    /* ---------- server-issued verification ----------
+       The upstream Worker lives on workers.dev, which can be slow or briefly
+       unreachable from mainland China. Without a timeout the browser fetch can
+       hang forever and the form stays at "Loading verification…" with an empty
+       image box. Add an abort timeout, automatic retries and a clear failure
+       message; "New question" cancels any in-flight request.
+       ------------------------------------------------------------------ */
     var uploadBox = document.querySelector('.sb-upload[data-api]');
     var api = uploadBox ? uploadBox.getAttribute('data-api') : '';
     var capImg = $('sbCaptchaSvg'), capAns = $('sbCaptchaAnswer'),
         capTok = $('sbCaptchaToken'), capBtn = $('sbCaptchaRefresh'), capMsg = $('sbCaptchaMsg');
-    function capStatus(t) { if (capMsg) capMsg.textContent = t; }
+    var CAP_TIMEOUT = 8000, CAP_RETRIES = 2, capSeq = 0, capCtrl = null;
+
+    function capStatus(t, kind) {
+      if (!capMsg) return;
+      capMsg.textContent = t;
+      capMsg.style.color = kind === 'err' ? '#c0392b' : '';
+    }
+
+    function fetchCaptcha(seq) {
+      var ctrl = (typeof AbortController === 'function') ? new AbortController() : null;
+      capCtrl = ctrl;
+      var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, CAP_TIMEOUT) : null;
+      function done() { if (timer) clearTimeout(timer); }
+      return fetch(api + '/captcha?_=' + Date.now(), {
+        cache: 'no-store', signal: ctrl ? ctrl.signal : undefined
+      }).then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      }).then(function (d) {
+        done();
+        if (seq !== capSeq) return null;      // superseded by a newer load
+        if (!d || !d.svg || !d.token) throw new Error('Invalid verification response');
+        return d;
+      }, function (e) {
+        done();
+        throw e;
+      });
+    }
+
     function loadCaptcha() {
       if (!api || !capImg || !capTok) return;
+      var seq = ++capSeq;
+      if (capCtrl) { try { capCtrl.abort(); } catch (e) { /* already settled */ } }
+      capImg.innerHTML = '';
+      capTok.value = '';
+      if (capAns) capAns.value = '';
       capStatus('Loading verification…');
-      fetch(api + '/captcha', { cache: 'no-store' })
-        .then(function (r) { return r.json(); })
-        .then(function (d) {
-          capImg.innerHTML = d.svg || '';
-          capTok.value = d.token || '';
-          if (capAns) capAns.value = '';
+
+      function attempt(n) {
+        fetchCaptcha(seq).then(function (d) {
+          if (seq !== capSeq || !d) return;
+          capImg.innerHTML = d.svg;
+          capTok.value = d.token;
           capStatus('');
-        })
-        .catch(function () { capStatus('Could not load verification. Click "New question" to retry.'); });
+        }).catch(function () {
+          if (seq !== capSeq) return;         // superseded by a newer load
+          if (n < CAP_RETRIES) {
+            capStatus('Verification is taking longer than usual, retrying…');
+            setTimeout(function () { if (seq === capSeq) attempt(n + 1); }, 700);
+          } else {
+            capStatus('Could not load verification. Check your connection and click "New question" to retry.', 'err');
+          }
+        });
+      }
+      attempt(0);
     }
     if (capBtn) capBtn.addEventListener('click', loadCaptcha);
     loadCaptcha();
