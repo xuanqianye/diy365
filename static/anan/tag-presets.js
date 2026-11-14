@@ -1,24 +1,52 @@
 /* 后台「标签预设」：把当前选中的标签存为命名预设，下次一键套用。
  *
- * 预设保存在仓库 data/tag-presets.json（后端 /api/tag-presets 读写），跨设备共享。
+ * 预设保存在仓库 data/tag-presets.json，跨设备共享（不是浏览器 localStorage）。
+ * 后端 /api/tag-presets 直接复用本浏览器 Decap 的 GitHub 登录态
+ * （X-GH-Token 请求头），无需在 Cloudflare 另配 GH_TOKEN。
+ *
  * 使用 field-helper.js 暴露的：
  *   __diy365GetField('tags')  -> 当前标签数组
  *   __diy365SetField('tags', arr) -> 写入（与 Decap 内部 DRAFT_CHANGE_FIELD 一致）
  *
  * 说明：
- *   - 预设存在仓库（不是浏览器 localStorage），换电脑 / 清缓存也不丢，多设备共享同一份。
- *   - 「套用」采用「并集去重」：把预设标签追加到当前已选标签里（不会删掉已有的），
- *     重复套用同一预设不会重复添加。
+ *   - 「套用」采用「并集去重」：把预设标签追加到当前已选标签里（不会删掉已有的）。
  *   - 仅在正在编辑某篇草稿时有效。
+ *   - 浮动按钮与「投稿审核 / 版权投诉」共用右下角工具条 #wbAdminBar，互不重叠。
  */
 (function () {
   if (!window.CMS) return;
 
   var API = '/api/tag-presets';
-  var presets = [];       // 远端预设列表 [{name, tags}]
-  var loaded = false;     // GET 是否已返回
-  var loadErr = '';       // 加载错误信息（空=正常）
+  var presets = [];
+  var loaded = false;
+  var loadErr = '';
 
+  /* Decap 把 GitHub OAuth token 存在 localStorage；与 review-panel.js 同一套查找逻辑。 */
+  function cmsToken() {
+    var keys = ['decap-cms-user', 'netlify-cms-user'];
+    try {
+      for (var j = 0; j < localStorage.length; j++) {
+        var k = localStorage.key(j);
+        if (k && /cms[-_]user/i.test(k) && keys.indexOf(k) < 0) keys.push(k);
+      }
+      for (var n = 0; n < keys.length; n++) {
+        var raw = localStorage.getItem(keys[n]);
+        if (!raw) continue;
+        try {
+          var u = JSON.parse(raw);
+          var t = u.token || (u.auth && u.auth.token) || (u.data && u.data.token);
+          if (t) return t;
+        } catch (e) { /* not JSON */ }
+      }
+      return localStorage.getItem('diy365_github_pat') || '';
+    } catch (e) { return ''; }
+  }
+  function apiHeaders() {
+    var h = { 'Content-Type': 'application/json' };
+    var t = cmsToken();
+    if (t) h['X-GH-Token'] = t;
+    return h;
+  }
   function getCurrentTags() {
     var t = (typeof window.__diy365GetField === 'function') ? window.__diy365GetField('tags') : null;
     if (!t) return [];
@@ -31,20 +59,18 @@
 
   /* ---------- 与后端交互 ---------- */
   function load() {
-    return fetch(API, { credentials: 'same-origin' }).then(function (r) {
-      return r.json();
-    }).then(function (j) {
-      presets = (j && j.presets) || [];
-      loaded = true;
-      if (j && j.error) loadErr = j.error;
-    }).catch(function () {
-      loaded = true; loadErr = 'fetch_failed';
-    });
+    return fetch(API, { credentials: 'same-origin', headers: { 'X-GH-Token': cmsToken() } })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        presets = (j && j.presets) || [];
+        loaded = true;
+        loadErr = (j && j.error) || '';
+      })
+      .catch(function () { loaded = true; loadErr = 'fetch_failed'; });
   }
   function savePreset(name, tags) {
     return fetch(API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: apiHeaders(),
       body: JSON.stringify({ action: 'save', name: name, tags: tags })
     }).then(function (r) { return r.json(); }).then(function (j) {
       if (j && j.ok && Array.isArray(j.presets)) presets = j.presets;
@@ -53,8 +79,7 @@
   }
   function deletePreset(name) {
     return fetch(API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: apiHeaders(),
       body: JSON.stringify({ action: 'delete', name: name })
     }).then(function (r) { return r.json(); }).then(function (j) {
       if (j && j.ok && Array.isArray(j.presets)) presets = j.presets;
@@ -65,27 +90,50 @@
   /* ---------- UI ---------- */
   var btn, panel, panelOpen = false;
 
-  function buildUI() {
+  function ensureBar() {
+    var bar = document.getElementById('wbAdminBar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'wbAdminBar';
+      bar.style.cssText = 'position:fixed;right:20px;bottom:20px;z-index:2147483000;' +
+        'display:flex;flex-direction:column;align-items:flex-end;gap:8px;';
+      document.body.appendChild(bar);
+    }
+    return bar;
+  }
+  function addButton() {
+    if (document.getElementById('tpLaunch')) return;
     btn = document.createElement('button');
+    btn.id = 'tpLaunch';
+    btn.type = 'button';
     btn.textContent = '🏷️ 标签预设';
     btn.title = '保存 / 套用标签组合（存于仓库，跨设备共享）';
-    btn.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:2147482000;padding:10px 14px;' +
-      'background:#2f80ed;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;' +
-      'box-shadow:0 4px 14px rgba(0,0,0,.25);font-family:system-ui,sans-serif;';
-    document.body.appendChild(btn);
+    btn.style.cssText = 'padding:9px 15px;border:none;border-radius:999px;background:#2f80ed;' +
+      'color:#fff;font:600 13px system-ui,sans-serif;cursor:pointer;white-space:nowrap;' +
+      'box-shadow:0 6px 18px rgba(45,42,46,.25);';
     btn.addEventListener('click', togglePanel);
-
+    ensureBar().appendChild(btn);
+  }
+  function buildPanel() {
     panel = document.createElement('div');
-    panel.style.cssText = 'position:fixed;right:14px;bottom:58px;z-index:2147482000;width:300px;max-height:70vh;' +
-      'overflow:auto;background:#fff;border:1px solid #e2e2e2;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.25);' +
-      'font-family:system-ui,sans-serif;font-size:13px;color:#222;display:none;';
+    /* bottom:160px keeps the panel above the 3-button toolbar instead of covering it */
+    panel.style.cssText = 'position:fixed;right:20px;bottom:160px;z-index:2147482000;width:320px;' +
+      'max-height:64vh;overflow:auto;background:#fff;border:1px solid #e2e2e2;border-radius:10px;' +
+      'box-shadow:0 8px 30px rgba(0,0,0,.25);font-family:system-ui,sans-serif;font-size:13px;' +
+      'color:#222;display:none;';
     document.body.appendChild(panel);
   }
-
   function togglePanel() {
+    if (!panel) return;
     panelOpen = !panelOpen;
     panel.style.display = panelOpen ? 'block' : 'none';
     if (panelOpen) render();
+  }
+  function errText(code) {
+    if (code === 'need_login') return '请先用 GitHub 登录后台（登录态即凭据），登录后点「重新加载」。';
+    if (code === 'not_configured') return '后端缺少 GitHub 凭据，请更新 /api/tag-presets 到最新版本。';
+    if (code === 'fetch_failed') return '无法连接 /api/tag-presets，请检查网络或稍后重试。';
+    return '后端返回错误：' + code;
   }
 
   function render() {
@@ -95,16 +143,17 @@
     html += '<b style="font-size:14px;">🏷️ 标签预设</b>';
     html += '<span style="cursor:pointer;color:#999;font-size:16px;line-height:1;" data-act="close">×</span></div>';
 
-    // 后端状态提示
     if (!loaded) {
       html += '<div style="padding:10px 14px;color:#888;">加载预设中…</div>';
     } else if (loadErr) {
-      html += '<div style="padding:10px 14px;color:#c0392b;background:#fdf3f2;">预设加载失败（' + escapeHtml(loadErr) +
-        '）。保存需要后端 /api/tag-presets 已部署且 GH_TOKEN 已配置。</div>';
+      html += '<div style="padding:10px 14px;color:#c0392b;background:#fdf3f2;">' +
+        escapeHtml(errText(loadErr)) +
+        '<div style="margin-top:6px"><button data-act="reload" style="padding:4px 10px;' +
+        'background:#fff;border:1px solid #e2b6bb;border-radius:6px;cursor:pointer;color:#c0392b;">重新加载</button></div></div>';
     }
 
     html += '<div style="padding:10px 14px;border-bottom:1px solid #eee;">';
-    html += '当前标签：<b>' + (cur.length ? cur.join('、') : '（无）') + '</b>';
+    html += '当前标签：<b>' + escapeHtml(cur.length ? cur.join('、') : '（无）') + '</b>';
     html += '<div style="margin-top:8px;display:flex;gap:6px;">';
     html += '<input id="tp-name" placeholder="预设名称，如 植物/节日" style="flex:1;padding:6px 8px;border:1px solid #ccc;border-radius:6px;font-size:13px;">';
     html += '<button data-act="save" style="padding:6px 10px;background:#2f80ed;color:#fff;border:none;border-radius:6px;cursor:pointer;">保存当前</button>';
@@ -130,6 +179,11 @@
 
     var closeEl = panel.querySelector('[data-act="close"]');
     if (closeEl) closeEl.addEventListener('click', togglePanel);
+    var reloadBtn = panel.querySelector('[data-act="reload"]');
+    if (reloadBtn) reloadBtn.addEventListener('click', function () {
+      loaded = false; render();
+      load().then(function () { render(); });
+    });
     var saveBtn = panel.querySelector('[data-act="save"]');
     if (saveBtn) saveBtn.addEventListener('click', onSave);
     panel.querySelectorAll('[data-act="apply"]').forEach(function (b) {
@@ -153,21 +207,17 @@
         btn.textContent = '✅ 已保存 ' + name;
         setTimeout(function () { btn.textContent = '🏷️ 标签预设'; }, 1500);
       } else {
-        alert('保存失败：' + ((j && j.error) || '未知错误') + '。请确认后端 /api/tag-presets 已部署。');
+        alert('保存失败：' + (j ? errText(j.error || 'unknown') : '未知错误'));
       }
-    }).catch(function () {
-      alert('保存失败：网络错误。');
-    });
+    }).catch(function () { alert('保存失败：网络错误。'); });
   }
-
   function onApply(i) {
     var p = presets[i];
     if (!p) return;
     var cur = getCurrentTags();
     var union = cur.slice();
     (p.tags || []).forEach(function (t) { if (union.indexOf(t) < 0) union.push(t); });
-    var ok = setTags(union);
-    if (ok) {
+    if (setTags(union)) {
       render();
       btn.textContent = '✅ 已套用 ' + p.name;
       setTimeout(function () { btn.textContent = '🏷️ 标签预设'; }, 1500);
@@ -175,19 +225,15 @@
       alert('套用失败：请确认你正在编辑一篇草稿（已打开某个文章）。');
     }
   }
-
   function onDelete(i) {
     var p = presets[i];
     if (!p) return;
     if (!confirm('删除预设「' + p.name + '」？')) return;
     deletePreset(p.name).then(function (j) {
       if (j && j.ok) render();
-      else alert('删除失败：' + ((j && j.error) || '未知错误'));
-    }).catch(function () {
-      alert('删除失败：网络错误。');
-    });
+      else alert('删除失败：' + (j ? errText(j.error || 'unknown') : '未知错误'));
+    }).catch(function () { alert('删除失败：网络错误。'); });
   }
-
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -195,14 +241,16 @@
   }
 
   function init() {
-    if (document.getElementById('tp-root')) return;
-    buildUI();
+    addButton();
+    buildPanel();
     load().then(function () { if (panelOpen) render(); });
   }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+  /* Decap re-renders its SPA and may drop our button; keep it in the shared bar. */
+  if (window.MutationObserver) {
+    new MutationObserver(function () {
+      if (!document.getElementById('tpLaunch')) addButton();
+    }).observe(document.body, { childList: true });
   }
 })();

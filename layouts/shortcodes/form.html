@@ -87,6 +87,21 @@
   <textarea name="accuracy" required>The information above is accurate, and I am the copyright owner or authorized to act on behalf of the owner.</textarea>
   <label>Electronic Signature (type your full name) *</label>
   <input name="signature" required maxlength="120">
+  <div class="sb-upload" id="dmcaEvidenceBox">
+    <span class="sb-label">Supporting Evidence (optional) <small>Screenshots, original artwork, proof of ownership &middot; JPG / PNG / WebP only &middot; up to 5 images</small></span>
+    <div class="sb-drop" id="dmcaDrop" role="button" tabindex="0" aria-label="Choose or drop evidence images">
+      <div class="sb-drop-icon">⬆</div>
+      <strong>Click to choose evidence images, or drag them here</strong>
+      <span>Images are uploaded to our image host; the links are attached to your request for review.</span>
+    </div>
+    <input type="file" id="dmcaFiles" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" multiple hidden>
+    <div class="sb-status" id="dmcaStatus" role="status" aria-live="polite"></div>
+    <div class="sb-list" id="dmcaList"></div>
+    <textarea name="evidence" id="dmcaEvidenceUrls" hidden></textarea>
+    <p class="sb-hint"><span class="sb-count" id="dmcaCount">0</span> / 5 uploaded. Evidence is optional, but complete requests are processed faster.</p>
+  </div>
+  <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"
+         style="position:absolute!important;left:-9999px!important;width:1px;height:1px;opacity:0">
   <input type="hidden" name="form_type" value="dmca">
   <button class="btn" type="submit">Submit Removal Request</button>
 </form>

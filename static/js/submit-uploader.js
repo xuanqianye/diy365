@@ -264,3 +264,162 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();
+
+/* ============================================================
+   DMCA supporting-evidence uploader  (/copyright-removal/ and /dmca/)
+   The receiving Worker only persists a fixed set of DMCA fields, so the
+   uploaded image URLs are appended to the `infringing` textarea just before
+   the form posts. The admin "版权投诉" panel parses them back into thumbnails.
+   ============================================================ */
+(function () {
+  'use strict';
+
+  var ENDPOINT = 'https://api.superbed.cn/upload';
+  var TOKEN = '41871f8e5d6823960d3128b1ffb518a7';
+  var MAX_FILES = 5;
+  var MAX_BYTES = 15 * 1024 * 1024;
+  var MARK = '\n\nSupporting evidence (uploaded images):\n';
+
+  var zone, input, list, statusEl, countEl, output, form, infringing;
+  var items = [];
+  var busy = false;
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function setStatus(msg, kind) {
+    if (!statusEl) return;
+    statusEl.textContent = msg || '';
+    statusEl.className = 'sb-status' + (kind ? ' sb-' + kind : '');
+  }
+  function isImage(f) {
+    return /\.(jpe?g|png|webp)$/i.test(f.name) ||
+           ['image/jpeg', 'image/png', 'image/webp'].indexOf(f.type) >= 0;
+  }
+
+  function render() {
+    if (output) output.value = items.join('\n');
+    if (countEl) countEl.textContent = items.length;
+    if (!list) return;
+    list.innerHTML = '';
+    items.forEach(function (url, i) {
+      var div = document.createElement('div');
+      div.className = 'sb-item';
+      div.innerHTML =
+        '<img src="' + esc(url) + '" alt="" loading="lazy">' +
+        '<span class="sb-item-tag">Evidence ' + (i + 1) + '</span>' +
+        '<button type="button" class="sb-item-del" aria-label="Remove this image">&times;</button>';
+      div.querySelector('.sb-item-del').addEventListener('click', function () {
+        items.splice(i, 1);
+        render();
+      });
+      list.appendChild(div);
+    });
+  }
+
+  function uploadOne(f) {
+    setStatus('Uploading: ' + f.name + '…');
+    var fd = new FormData();
+    fd.append('file', f, f.name);
+    fd.append('token', TOKEN);
+    fd.append('categories', 'diy365-dmca-evidence');
+    return fetch(ENDPOINT, { method: 'POST', body: fd })
+      .then(function (r) {
+        return r.text().then(function (txt) {
+          var d = {};
+          try { d = JSON.parse(txt); } catch (e) { /* keep empty */ }
+          var url = d.url || (d.data && d.data.url) || d.src;
+          var badErr = d.err !== undefined && d.err !== 0;
+          if (!r.ok || badErr || !url) {
+            throw new Error(d.msg || d.error || d.message || txt.slice(0, 120) || ('HTTP ' + r.status));
+          }
+          return url;
+        });
+      })
+      .then(function (url) { items.push(url); render(); });
+  }
+
+  function handleFiles(files) {
+    if (!files || !files.length || busy) return;
+    busy = true;
+    var chain = Promise.resolve();
+    Array.prototype.forEach.call(files, function (f) {
+      chain = chain.then(function () {
+        if (items.length >= MAX_FILES) {
+          setStatus('最多上传 5 张证明材料，已忽略其余文件。', 'warn');
+          return;
+        }
+        if (!isImage(f)) {
+          setStatus('仅支持 JPG / PNG / WebP 图片：' + f.name, 'warn');
+          return;
+        }
+        if (f.size > MAX_BYTES) {
+          setStatus('图片超过 15 MB，已跳过：' + f.name, 'warn');
+          return;
+        }
+        return uploadOne(f);
+      }).catch(function (e) {
+        setStatus('上传失败 ' + f.name + ' — ' + e.message, 'err');
+      });
+    });
+    chain.then(function () {
+      busy = false;
+      if (items.length && !/上传失败/.test(statusEl ? statusEl.textContent : '')) {
+        setStatus('已上传 ' + items.length + ' 张证明材料', 'ok');
+      }
+      render();
+    });
+  }
+
+  function init() {
+    zone = $('dmcaDrop');
+    input = $('dmcaFiles');
+    if (!zone || !input) return;   // not a DMCA form page
+    list = $('dmcaList');
+    statusEl = $('dmcaStatus');
+    countEl = $('dmcaCount');
+    output = $('dmcaEvidenceUrls');
+    form = zone.closest('form');
+    infringing = form ? form.querySelector('[name="infringing"]') : null;
+
+    zone.addEventListener('click', function () { input.click(); });
+    zone.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
+    });
+    input.addEventListener('change', function () {
+      handleFiles(input.files);
+      input.value = '';
+    });
+    ['dragenter', 'dragover'].forEach(function (ev) {
+      zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.add('sb-drag'); });
+    });
+    ['dragleave', 'drop'].forEach(function (ev) {
+      zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.remove('sb-drag'); });
+    });
+    zone.addEventListener('drop', function (e) { handleFiles(e.dataTransfer.files); });
+
+    if (form) {
+      form.addEventListener('submit', function (e) {
+        if (busy) {
+          e.preventDefault();
+          setStatus('证明材料仍在上传，请稍等几秒再提交。', 'err');
+          return;
+        }
+        /* Worker's buildDmca() keeps `infringing` verbatim in the KV record.
+           Rebuild this value on every submit so a failed/retried submit does
+           not duplicate the evidence block. */
+        if (infringing) {
+          var clean = String(infringing.value || '').split(MARK)[0].trim();
+          infringing.value = clean + (items.length ? MARK + items.join('\n') : '');
+        }
+      });
+    }
+    render();
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();

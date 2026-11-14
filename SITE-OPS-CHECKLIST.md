@@ -1,6 +1,6 @@
 # diy365.cc 站点运维清单（建站 · 功能 · 安全 · 应急）
 
-> 最后更新：2026-11-13
+> 最后更新：2026-11-14
 > 用途：站点全部功能部署上线后的总归档。日后需要**重建、排障、应对封站/故障**时，按本清单操作。
 > 适用对象：站长本人（xuanqianye）。所有代码均位于 GitHub 仓库 `xuanqianye/diy365`。
 
@@ -12,7 +12,8 @@
 Hugo 静态站点  →  GitHub 仓库(xuanqianye/diy365, main)  →  GitHub Actions 自动构建
              →  Cloudflare Pages 发布  →  自定义域 diy365.cc / www.diy365.cc
 后台 Decap CMS(/anan) 经 GitHub OAuth 代理 Worker(diy365-auth) 直推 GitHub 触发 CI
-投稿/联系/DMCA 走公开接口 /submit(Pages Function)，用 GH_TOKEN 写仓库
+投稿/联系/DMCA 走 Cloudflare Worker `diy365-submit` → 存 KV（不写 GitHub 仓库）
+后台 /anan/ 右下角三个面板读 KV：投稿审核 / 版权投诉 / 标签预设
 ```
 
 纯静态、无后端数据库。内容即 Markdown 文件（在 `content/patterns/`）。
@@ -56,6 +57,9 @@ Hugo 静态站点  →  GitHub 仓库(xuanqianye/diy365, main)  →  GitHub Acti
 | 13 | **自动退出（1h 无操作）** | `static/anan/idle-timeout.js`；登录态后 1 小时无操作清登录态刷新，到期前 5 分钟黄色提示 | 7e2bbec |
 | 14 | **auth 白名单故障提示条** | `static/anan/whitelist-notice.js`（琥珀色常驻，提示 GitHub API 故障 fail-closed 时临时去白名单部署） | ddd4edc |
 | 15 | **阅读量计数** | **已撤销**（用户嫌 KV 绑定麻烦，保持现状）；如未来要做，见 §7 备注 | revert 9a08a32 |
+| 16 | **投稿审核 / 版权投诉分离** | `static/anan/review-panel.js`：投稿审核只列 `submission`/`contact`，版权投诉独立按钮+独立面板（只列 `dmca`、无发布按钮、可标记已处理并显示待处理角标）；`publish()` 加类型硬校验，DMCA 绝不能写进 `content/patterns/` | 2026-11-14 |
+| 17 | **版权表单证明材料上传** | `layouts/shortcodes/form.html` 的 dmca 分支 + `static/js/submit-uploader.js` 第二段：最多 5 张 JPG/PNG/WebP 直传 Superbed，URL 随 `infringing` 字段进 KV；后台版权投诉面板解析成缩略图 | 2026-11-14 |
+| 18 | **标签预设免密钥 + 工具条不重叠** | `functions/api/tag-presets.js` / `static/anan/tag-presets.js`：复用 Decap 的 GitHub 登录态（`X-GH-Token`），不再要求 Cloudflare 配 `GH_TOKEN`；三个浮动按钮统一放进 `#wbAdminBar` 竖排，面板上移到 `bottom:160px` | 2026-11-14 |
 
 > 提交号来自工作日志，仅作追溯参考；以 `git log` 实际为准。
 
@@ -89,6 +93,7 @@ Hugo 静态站点  →  GitHub 仓库(xuanqianye/diy365, main)  →  GitHub Acti
 | 🟡 注意 | **单一协作者 + 账号安全依赖 2FA** | 仅 `xuanqianye` 一个协作者；账号本身安全=2FA 强度 | 
 | 🟡 注意 | **AI 训练爬虫屏蔽可能不全** | `robots.txt` 已屏蔽 GPTBot/CCBot/ClaudeBot 等常见 AI bot，但新型 bot 可能漏网 | 
 | 🟢 限制 | **GA4 数据收集未激活** | 代码正确，但大陆 GFW 屏蔽 Google 域名，且尚未收到海外真实访问；非漏洞，待海外访问激活 | 
+| 🟢 已修复 | **DMCA 投诉曾被误发布为图解文章**（2026-11-14） | 旧投稿审核面板对 KV 中**所有类型**都显示「直接发布」，一条测试投诉被写成 `content/patterns/dmca-mwghkg8p.md` 并上线。已删除该文件、面板按 type 分流、`publish()` 加类型硬校验。注意：发布成功后面板会删除 KV 记录，合规留档请勿只依赖 KV | 
 
 ---
 

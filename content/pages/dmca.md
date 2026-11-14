@@ -22,6 +22,6 @@ If you own the copyright to a pattern, chart, photograph or text published on th
 
 ## Submit a request
 
-Fill in the form below. Fields marked * are required. You may attach supporting evidence (images or videos, up to 5 files) to help us verify your claim.
+Fill in the form below. Fields marked * are required. You may attach supporting evidence (JPG / PNG / WebP images, up to 5 files) to help us verify your claim. Images are uploaded to our image host and the links are attached to your request.
 
 {{< form type="dmca" >}}
