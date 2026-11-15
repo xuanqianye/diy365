@@ -10,5 +10,8 @@
     {{ partial "pattern-card.html" . }}
   {{ end }}
 </div>
-{{ template "_internal/pagination.html" . }}
+{{- /* Fallback pager for no-JS / feed load failure; see term.html */ -}}
+<div class="hugo-pager" id="hugoPager">
+  {{ template "_internal/pagination.html" . }}
+</div>
 {{ end }}

@@ -190,10 +190,33 @@ img { max-width: 100%; height: auto; display: block; }
 .btn:hover { background: var(--primary-dark); }
 .form-note { background: #fdeef1; border-radius: 8px; padding: 12px 14px; font-size: 0.85rem; color: var(--primary-dark); }
 
-/* ---------------- Pagination ---------------- */
-.pagination { display: flex; justify-content: center; gap: 10px; margin: 30px 0; flex-wrap: wrap; }
+/* ---------------- Pagination ----------------
+   The visible pager is .feed-pager, rendered by js/feed.js (it follows the
+   chosen page size and the category/tag filter). Hugo's built-in pager is
+   kept in the DOM only as a no-JS / feed-load-failure fallback, so hide it
+   whenever JavaScript is active. Showing both produced two pagers on every
+   category/tag/list page. */
+.hugo-pager { margin: 30px 0; }
+html.js .hugo-pager {
+  /* Visually hidden, not removed: the /page/N/ links stay in the DOM for
+     crawlers and no-JS visitors, but the duplicate pager is not drawn.
+     (head.html has a plain display:none fallback for old cached CSS.) */
+  display: block;
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.pagination { display: flex; justify-content: center; align-items: center; gap: 10px; margin: 30px 0; flex-wrap: wrap; list-style: none; padding: 0; }
+.pagination li { list-style: none; }
 .pagination a, .pagination span { padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
-.pagination .current { background: var(--primary); color: #fff; border-color: var(--primary); }
+.pagination a span { padding: 0; border: 0; background: none; }
+.pagination .current, .pagination li.active a { background: var(--primary); color: #fff; border-color: var(--primary); }
+.pagination li.disabled a { opacity: .45; cursor: default; }
 
 /* ---------------- Taxonomy ---------------- */
 .taxonomy-cloud { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0; }

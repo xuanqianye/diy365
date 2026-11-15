@@ -7,9 +7,20 @@
 (function () {
   'use strict';
 
+  /* Hugo also renders a server-side pager on taxonomy/list pages (.hugo-pager).
+     head.html hides it whenever JS is active, because this script renders the
+     one real pager. If anything here fails, restore it so the server-rendered
+     first screen stays navigable via /page/2/ ... */
+  function fallbackPager() {
+    // Only pages that actually have a server-side pager need it restored.
+    if (document.getElementById('hugoPager')) {
+      document.documentElement.classList.remove('js');
+    }
+  }
+
   var grid = document.getElementById('feedMasonry');
   var ctl = document.getElementById('feedControls');
-  if (!grid || !ctl) return;
+  if (!grid || !ctl) { fallbackPager(); return; }
 
   var modeEl = document.getElementById('feedMode');
   var sizeEl = document.getElementById('feedSize');
@@ -211,5 +222,10 @@
     .then(function (r) { if (!r.ok) throw new Error('manifest'); return r.json(); })
     .then(function (m) { manifest = m; return loadAll(); })
     .then(function () { return render(false); })
-    .catch(function () { info.textContent = ''; });
+    .catch(function () {
+      // Feed data unavailable: leave the server-rendered cards in place and
+      // bring back Hugo's /page/2/ links instead of showing no pager at all.
+      info.textContent = '';
+      fallbackPager();
+    });
 })();

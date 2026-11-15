@@ -12,7 +12,7 @@
   {{ partial "share.html" . }}
   {{ if .IsHome }}{{ partial "feed-data.html" . }}{{ end }}
   <script defer src="{{ "js/share.js" | relURL }}"></script>
-  <script defer src="{{ "js/feed.js" | relURL }}?v=20261115b"></script>
+  <script defer src="{{ "js/feed.js" | relURL }}?v=20261115c" onerror="document.documentElement.classList.remove('js')"></script>
   <script defer src="{{ "js/search.js" | relURL }}?v=20261115b"></script>
   <script defer src="{{ "js/submit-uploader.js" | relURL }}?v=20261114d"></script>
   <script defer src="{{ "js/lightbox.js" | relURL }}"></script>

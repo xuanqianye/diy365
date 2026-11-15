@@ -7,5 +7,10 @@
     {{ partial "pattern-card.html" . }}
   {{ end }}
 </div>
-{{ template "_internal/pagination.html" . }}
+{{- /* Server-rendered pager is a no-JS / feed-load-failure fallback only.
+       feed.js renders the real pager, which follows the user's page size and
+       category filter. Hidden by default in style.css (.js .hugo-pager). */ -}}
+<div class="hugo-pager" id="hugoPager">
+  {{ template "_internal/pagination.html" . }}
+</div>
 {{ end }}
