@@ -20,6 +20,8 @@
     .btn-primary { background:var(--p); color:#fff; }
     .btn-primary:disabled { opacity:.5; cursor:not-allowed; }
     .btn-ghost { background:#fff; color:var(--pd); border:1px solid var(--bd); }
+    .btn-ghost:disabled { opacity:.5; cursor:not-allowed; }
+    #authHint { margin-top:10px; font-size:.86rem; color:var(--mu); }
     .pv { background:#fff; border:1px solid var(--bd); border-radius:10px; padding:12px 14px; margin-bottom:10px; font-size:.9rem; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
     .pv .meta { flex:1; min-width:200px; }
     .pv .ops { display:flex; gap:8px; align-items:center; }
@@ -27,16 +29,17 @@
     .pv .pub:disabled { opacity:.5; cursor:not-allowed; }
     .pv .edit { background:#fff; color:var(--pd); border:1px solid var(--bd); padding:7px 14px; border-radius:8px; font-size:.85rem; text-decoration:none; }
     #status { margin-top:16px; font-size:.88rem; white-space:pre-wrap; background:#fff; border:1px solid var(--bd); border-radius:10px; padding:12px; max-height:300px; overflow:auto; }
-    .ok { color:#2e9e5b; } .err { color:#d6453d; }
+    .ok { color:#2e9e5b; } .err { color:#d6453d; } .warn { color:#b7791f; }
   </style>
 </head>
 <body>
 <div class="wrap">
   <h1>草稿管理</h1>
-  <p class="sub">列出所有 <code>draft: true</code> 的「钩针图解」草稿。点「发布」即把 draft 改为 false 并触发部署；点「编辑」跳 Decap 后台修改后再发布。<strong>「全部发布」会合并成 1 次提交、只触发 1 次部署</strong>（无论多少篇都不触发限流）。需先登录 Decap 后台或粘贴 GitHub Token。</p>
+  <p class="sub">列出所有 <code>draft: true</code> 的「钩针图解」草稿。点「发布」即把 draft 改为 false 并触发部署；点「编辑」跳 Decap 后台修改后再发布。<strong>「全部发布」会合并成 1 次提交、只触发 1 次部署</strong>。需先登录 Decap 后台或粘贴 GitHub Token。</p>
 
   <label for="token">GitHub Token（自动读取 Decap 登录态，失败再手动粘贴）</label>
   <input type="password" id="token" placeholder="ghp_xxx 或 github_pat_xxx（留空则尝试复用 Decap 登录态）" autocomplete="off" />
+  <div id="authHint"></div>
 
   <div class="row">
     <button class="btn-primary" id="loadBtn">① 加载草稿列表</button>
@@ -51,31 +54,47 @@
 <script>
 (function () {
   "use strict";
-  var REPO = "xuanqianye/diy365";
+  /* Why this page no longer issues one request per file:
+     content/patterns/ now holds ~1000 markdown files. The old implementation
+     fired ~1000 parallel GETs and used Promise.all, so a single network blip
+     produced "Failed to fetch" and discarded every successful response.
+     Now: 1 tree request for metadata, batched blob reads (GraphQL, with a
+     throttled REST fallback), and a localStorage cache of "known published"
+     blob SHAs so repeat visits only read files that actually changed. */
+  var OWNER = "xuanqianye", NAME = "diy365";
+  var REPO = OWNER + "/" + NAME;
   var BRANCH = "main";
   var API = "https://api.github.com";
+  var CACHE_KEY = "diy365_drafts_nondraft_sha_v1";
+  var GQL_BATCH = 40;        // blob texts per GraphQL request
+  var TREE_BATCH = 80;       // files per create-tree request
+  var REST_CONCURRENCY = 6;  // capped, never fire 1000 fetches at once
+  var MAX_CACHE = 6000;
 
-  var TOKEN = null;
-  var ITEMS = {};   // slug -> {name, path, sha, content, isDraft, title}
-
+  var TOKEN = null, ITEMS = {}, BUSY = false;
   var $ = function (id) { return document.getElementById(id); };
+  var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+
   function log(msg, cls) {
-    var s = $("status");
-    var d = document.createElement("div");
+    var s = $("status"), d = document.createElement("div");
     if (cls) d.className = cls;
     d.textContent = msg;
     s.appendChild(d);
     s.scrollTop = s.scrollHeight;
   }
+  function setHint(msg, cls) {
+    var h = $("authHint");
+    h.textContent = msg;
+    h.className = cls || "";
+  }
 
-  // 复用 batch-pdf.html 的 token 探测：先手动粘贴，再读 Decap 登录态
+  // Reuse the Decap OAuth token when available; a manually pasted token wins.
   function detectToken() {
     var m = $("token").value.trim();
     if (m) return m;
     var re = /^(gh[op]_|github_pat_|[0-9a-f]{40})$/;
     for (var i = 0; i < localStorage.length; i++) {
-      var k = localStorage.key(i);
-      var v = localStorage.getItem(k);
+      var k = localStorage.key(i), v = localStorage.getItem(k);
       if (!/[a-z]*(decap|cms|netlify|github)[a-z]*/i.test(k)) continue;
       try {
         var o = JSON.parse(v);
@@ -85,31 +104,100 @@
     }
     return null;
   }
+  function refreshHint() {
+    if ($("token").value.trim()) setHint("✓ 已使用手动粘贴的 GitHub Token，可直接加载。", "ok");
+    else if (detectToken()) setHint("✓ 已检测到 Decap 登录态的 GitHub Token，可直接加载。", "ok");
+    else setHint("未检测到登录态：请先登录 Decap 后台，或在上方粘贴 GitHub Token。", "warn");
+  }
 
   function b64enc(str) { var b = new TextEncoder().encode(str), s = ""; for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s); }
   function b64dec(b64) { var bin = atob(b64.replace(/\s/g, "")); var bytes = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i); return new TextDecoder("utf-8").decode(bytes); }
+  function chunk(arr, n) { var r = []; for (var i = 0; i < arr.length; i += n) r.push(arr.slice(i, i + n)); return r; }
+
+  /* Single request helper: GETs retry on network/rate-limit failures; writes
+     NEVER retry (a lost response must not replay a commit/ref update). */
+  function request(url, init, label) {
+    var isGet = !init.method || init.method === "GET";
+    var maxTries = isGet ? 3 : 1;
+    var n = 0;
+    function once() {
+      n++;
+      var ctrl = new AbortController();
+      var timer = setTimeout(function () { ctrl.abort(); }, 25000);
+      return fetch(url, {
+        method: init.method || "GET",
+        headers: init.headers,
+        body: init.body,
+        signal: ctrl.signal
+      }).then(function (r) {
+        clearTimeout(timer);
+        return r.text().then(function (t) {
+          if (!r.ok) {
+            var e = new Error(label + " → " + r.status + " " + t.slice(0, 200));
+            e.status = r.status;
+            throw e;
+          }
+          try { return JSON.parse(t); } catch (_) { return t; }
+        });
+      }).catch(function (err) {
+        clearTimeout(timer);
+        var noStatus = !err.status;
+        // Only retry 403 when GitHub actually says rate/abuse limit. Retrying a
+        // permission error hundreds of times would make throttling worse.
+        var limited = err.status === 429 ||
+          (err.status === 403 && /rate limit|abuse|secondary|spam/i.test(String(err.message || "")));
+        var retryable = noStatus || limited || err.status >= 500;
+        if (retryable && n < maxTries) return sleep((limited ? 1500 : 700) * n).then(once);
+        if (noStatus) {
+          var e = new Error("网络连接失败或请求超时（GitHub 访问不稳定 / 代理中断 / 浏览器断网）：" + label + " [" + (err.message || err) + "]");
+          e.network = true;
+          throw e;
+        }
+        throw err;
+      });
+    }
+    return once();
+  }
 
   function gh(path, opts) {
     opts = opts || {};
     var h = { "Authorization": "token " + TOKEN, "Accept": "application/vnd.github+json" };
     if (opts.body) h["Content-Type"] = "application/json";
-    return fetch(API + path, { method: opts.method || "GET", headers: h, body: opts.body })
-      .then(function (r) {
-        return r.text().then(function (t) {
-          if (!r.ok) throw new Error(path + " → " + r.status + " " + t.slice(0, 200));
-          try { return JSON.parse(t); } catch (e) { return t; }
-        });
-      });
+    return request(API + path, { method: opts.method || "GET", headers: h, body: opts.body }, path);
+  }
+  function gql(query) {
+    return request(API + "/graphql", {
+      method: "POST",
+      headers: { "Authorization": "bearer " + TOKEN, "Content-Type": "application/json" },
+      body: JSON.stringify({ query: query })
+    }, "graphql").then(function (d) {
+      if (d.errors && d.errors.length) throw new Error("GraphQL: " + d.errors[0].message);
+      if (!d.data || !d.data.repository) throw new Error("GraphQL 无法访问仓库（Token 可能没有 repo 权限）");
+      return d.data.repository;
+    });
   }
 
-  function titleOf(c) { var m = c.match(/title:\s*"([^"]*)"/); return m ? m[1] : ""; }
+  function readCache() {
+    try { var o = JSON.parse(localStorage.getItem(CACHE_KEY) || "{}"); return o && typeof o === "object" ? o : {}; }
+    catch (e) { return {}; }
+  }
+  function writeCache(o) {
+    try {
+      if (Object.keys(o).length > MAX_CACHE) o = {};
+      localStorage.setItem(CACHE_KEY, JSON.stringify(o));
+    } catch (e) { /* storage full / disabled: cache is optional */ }
+  }
+
+  function titleOf(c) {
+    var m = c.match(/^\s*title:\s*(?:"([^"]*)"|'([^']*)'|(.+?))\s*$/m);
+    return m ? (m[1] || m[2] || m[3] || "") : "";
+  }
   function escapeHtml(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function isDraft(c) {
-    var m = c.match(/^---\n([\s\S]*?)\n---/);
+    var m = c.match(/^---\r?\n([\s\S]*?)\r?\n---/);
     if (!m) return false;
     var dm = m[1].match(/^\s*draft:\s*(.+?)\s*$/m);
-    if (!dm) return false;
-    return /^(true|yes|1)$/i.test(dm[1].trim());
+    return !!dm && /^(true|yes|1)$/i.test(dm[1].trim());
   }
   /* Hugo sorts .Site.RegularPages by Date descending. Date-only values make
      everything published on the same day tie, so Hugo falls back to title
@@ -123,7 +211,7 @@
       "T" + p(t.getUTCHours()) + ":" + p(t.getUTCMinutes()) + ":" + p(t.getUTCSeconds()) + "+08:00";
   }
   function setPublished(c, stamp) {
-    return c.replace(/^---\n([\s\S]*?)\n---/, function (fm) {
+    return c.replace(/^---\r?\n([\s\S]*?)\r?\n---/, function (fm) {
       var out = fm.replace(/draft:[ \t]*true[ \t]*$/m, "draft: false");
       if (/^[ \t]*date:[ \t]*.+$/m.test(out)) {
         out = out.replace(/^([ \t]*date:[ \t]*).+$/m, function (all, pre) { return pre + stamp; });
@@ -133,30 +221,123 @@
       return out;
     });
   }
+  function explain(e) {
+    var m = String((e && e.message) || e);
+    if (/409|not a fast.forward|does not match|non.fast.forward/i.test(m)) return m + "（远程期间有新提交，请重新「加载草稿列表」后再试）";
+    if (/rate limit|abuse|secondary|spam|429/i.test(m)) return m + "（GitHub 限流，等 1–2 分钟再试）";
+    return m;
+  }
 
-  function loadDrafts() {
-    TOKEN = detectToken();
-    if (!TOKEN) { log("❌ 未找到 GitHub Token：请先登录 Decap 后台，或手动粘贴 Token。", "err"); return; }
-    $("list").innerHTML = "";
-    log("正在列出 content/patterns …");
-    gh("/repos/" + REPO + "/contents/content/patterns").then(function (list) {
-      if (!Array.isArray(list)) throw new Error("目录读取失败：" + JSON.stringify(list).slice(0, 120));
-      var files = list.filter(function (f) { return /\.md$/i.test(f.name); });
-      log("共 " + files.length + " 个 md 文件，逐个检查 draft 字段 …");
-      return Promise.all(files.map(function (f) {
-        return gh("/repos/" + REPO + "/contents/" + f.path).then(function (d) {
-          var content = b64dec(d.content);
-          var slug = f.name.replace(/\.md$/i, "");
-          ITEMS[slug] = { name: f.name, path: f.path, sha: d.sha, content: content, isDraft: isDraft(content), title: titleOf(content) };
-          return ITEMS[slug];
-        });
-      })).then(function (items) {
-        var drafts = items.filter(function (i) { return i.isDraft; });
-        render(drafts);
-        $("pubAllBtn").disabled = !drafts.length;
-        log("草稿共 " + drafts.length + " 篇。", "ok");
+  /* One GraphQL request reads up to GQL_BATCH files at once. */
+  function gqlBatch(files) {
+    var q = 'query{repository(owner:"' + OWNER + '",name:"' + NAME + '"){';
+    files.forEach(function (f, i) {
+      var expr = BRANCH + ":" + f.path.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+      q += "f" + i + ':object(expression:"' + expr + '"){... on Blob{text}}';
+    });
+    q += "}}";
+    return gql(q).then(function (repo) {
+      return files.map(function (f, i) {
+        var o = repo["f" + i];
+        return o && typeof o.text === "string" ? o.text : null;
       });
-    }).catch(function (e) { log("❌ " + e.message, "err"); });
+    });
+  }
+
+  /* Fallback: capped-concurrency REST blob reads, partial success allowed. */
+  function restBatch(files, texts) {
+    return new Promise(function (resolve) {
+      var i = 0, active = 0, failed = 0;
+      function pump() {
+        if (i >= files.length && active === 0) return resolve(failed);
+        while (active < REST_CONCURRENCY && i < files.length) {
+          var f = files[i++];
+          active++;
+          (function (file) {
+            gh("/repos/" + REPO + "/git/blobs/" + file.sha).then(function (b) {
+              texts[file.sha] = b.encoding === "base64" ? b64dec(b.content) : (b.content || null);
+            }).catch(function () {
+              failed++;
+            }).then(function () { active--; pump(); });
+          })(f);
+        }
+      }
+      pump();
+    });
+  }
+
+  async function loadDrafts() {
+    if (BUSY) return;
+    TOKEN = detectToken();
+    if (!TOKEN) { refreshHint(); log("❌ 未找到 GitHub Token：请先登录 Decap 后台，或手动粘贴 Token。", "err"); return; }
+    BUSY = true;
+    $("loadBtn").disabled = true;
+    $("pubAllBtn").disabled = true;
+    $("status").innerHTML = "";
+    $("list").innerHTML = "";
+    ITEMS = {};
+    try {
+      log("① 读取仓库文件清单（1 次请求）…");
+      var tree = await gh("/repos/" + REPO + "/git/trees/" + BRANCH + "?recursive=1");
+      if (!tree || !Array.isArray(tree.tree)) throw new Error("文件清单读取失败：" + JSON.stringify(tree).slice(0, 160));
+      if (tree.truncated) log("⚠️ 文件清单被 GitHub 截断，结果可能不完整。", "warn");
+      var files = tree.tree.filter(function (f) {
+        var name = f.path.split("/").pop();
+        return f.type === "blob" && /^content\/patterns\/[^/]+\.md$/i.test(f.path) && !/^_index\.md$/i.test(name);
+      });
+
+      var cache = readCache();
+      var need = files.filter(function (f) { return !cache[f.sha]; });
+      log("② 共 " + files.length + " 个 md；缓存命中 " + (files.length - need.length) + " 个，需读取 " + need.length + " 个（批量，非逐文件并发）…");
+
+      var texts = {}, failed = [], gqlOK = true;
+      var batches = chunk(need, GQL_BATCH);
+      for (var bi = 0; bi < batches.length; bi++) {
+        var b = batches[bi];
+        if (gqlOK) {
+          try {
+            var arr = await gqlBatch(b);
+            var missing = [];
+            b.forEach(function (f, j) { if (arr[j] != null) texts[f.sha] = arr[j]; else missing.push(f); });
+            if (missing.length) {
+              log("   ↳ " + missing.length + " 个文件批量读取为空，单独补读 …", "warn");
+              await restBatch(missing, texts);
+              missing.forEach(function (f) { if (texts[f.sha] == null) failed.push(f); });
+            }
+          } catch (e) {
+            gqlOK = false;
+            log("⚠️ 批量读取不可用，自动切换为限速逐文件读取：" + explain(e), "warn");
+          }
+        }
+        if (!gqlOK) {
+          await restBatch(b, texts);
+          b.forEach(function (f) { if (texts[f.sha] == null) failed.push(f); });
+        }
+        if (batches.length > 1 && bi % 5 === 0) log("   进度 " + (bi + 1) + " / " + batches.length + " 批");
+      }
+
+      var drafts = [], newCache = 0;
+      files.forEach(function (f) {
+        var c = texts[f.sha];
+        if (c == null) return;
+        var name = f.path.split("/").pop();
+        var slug = name.replace(/\.md$/i, "");
+        var item = { name: name, path: f.path, sha: f.sha, content: c, isDraft: isDraft(c), title: titleOf(c) };
+        ITEMS[slug] = item;
+        if (item.isDraft) drafts.push(item);
+        else if (!cache[f.sha]) { cache[f.sha] = 1; newCache++; }
+      });
+      writeCache(cache);
+      render(drafts);
+      $("pubAllBtn").disabled = !drafts.length;
+      log("✅ 草稿共 " + drafts.length + " 篇（新缓存 " + newCache + " 个已发布文件）。", "ok");
+      if (failed.length) log("⚠️ " + failed.length + " 个文件本次读取失败，再点一次「加载草稿列表」会自动只重试这些文件。", "warn");
+    } catch (e) {
+      log("❌ 加载失败：" + explain(e), "err");
+    } finally {
+      BUSY = false;
+      $("loadBtn").disabled = false;
+    }
   }
 
   function render(drafts) {
@@ -168,17 +349,17 @@
       div.className = "pv";
       var meta = document.createElement("div");
       meta.className = "meta";
-      meta.innerHTML = "<b>" + escapeHtml(d.title || d.name) + "</b><br><span style='color:var(--mu);font-size:.82rem'>" + d.name + "</span>";
+      meta.innerHTML = "<b>" + escapeHtml(d.title || d.name) + "</b><br><span style='color:var(--mu);font-size:.82rem'>" + escapeHtml(d.name) + "</span>";
       var ops = document.createElement("div");
       ops.className = "ops";
       var pub = document.createElement("button");
       pub.className = "pub";
       pub.textContent = "发布";
-      pub.addEventListener("click", function () { publish(d.name.replace(/\.md$/, ""), pub); });
+      pub.addEventListener("click", function () { publish(d.name.replace(/\.md$/i, ""), pub); });
       var edit = document.createElement("a");
       edit.className = "edit";
       edit.textContent = "编辑";
-      edit.href = "https://diy365.cc/anan/#/collections/patterns/entries/" + encodeURIComponent(d.name.replace(/\.md$/, ""));
+      edit.href = "https://diy365.cc/anan/#/collections/patterns/entries/" + encodeURIComponent(d.name.replace(/\.md$/i, ""));
       edit.target = "_blank";
       ops.appendChild(pub);
       ops.appendChild(edit);
@@ -188,110 +369,99 @@
     });
   }
 
-  function publish(slug, btn) {
+  async function publish(slug, btn) {
+    if (BUSY) return;
     TOKEN = detectToken();
     var it = ITEMS[slug];
+    if (!TOKEN) { refreshHint(); log("❌ 缺少 GitHub Token。", "err"); return; }
     if (!it) { log("❌ 找不到 " + slug + " 的缓存，请重新加载列表。", "err"); return; }
     btn.disabled = true;
-    log("正在发布 " + slug + " …");
     var newContent = setPublished(it.content, localStamp(new Date()));
-    if (newContent === it.content) { log("⚠️ " + slug + " 的 front matter 里没有 draft:true，可能已发布。", "err"); btn.disabled = false; return; }
-    gh("/repos/" + REPO + "/contents/content/patterns/" + slug + ".md", {
-      method: "PUT",
-      body: JSON.stringify({ message: "publish draft: " + slug, content: b64enc(newContent), sha: it.sha })
-    }).then(function () {
-      log("✅ " + slug + " 已改为发布状态，GitHub Actions 正在重新部署（1–3 分钟）。部署完成后硬刷新前端即可看到。", "ok");
+    if (newContent === it.content) { log("⚠️ " + slug + " 的 front matter 里没有 draft:true，可能已发布。", "warn"); btn.disabled = false; return; }
+    try {
+      await gh("/repos/" + REPO + "/contents/" + it.path, {
+        method: "PUT",
+        body: JSON.stringify({ message: "publish draft: " + slug, content: b64enc(newContent), sha: it.sha })
+      });
+      log("✅ " + slug + " 已改为发布状态，GitHub Actions 正在重新部署（1–3 分钟）。", "ok");
       btn.textContent = "已发布";
-      btn.disabled = true;
       it.content = newContent;
       it.isDraft = false;
-    }).catch(function (e) { log("❌ " + slug + " 发布失败：" + e.message, "err"); btn.disabled = false; });
+    } catch (e) {
+      log("❌ " + slug + " 发布失败：" + explain(e), "err");
+      btn.disabled = false;
+    }
   }
 
-  // 全部发布：合并为 1 次提交（Git Tree API），只触发 1 次部署，避免大量连续提交触发限流/部署取消
-  function publishAll() {
+  /* Publish all in ONE commit. create-tree accepts plaintext `content`
+     directly (no separate blob POST per file), so ~72 drafts need 4 requests
+     instead of ~76 - far below GitHub's secondary rate limit. */
+  async function publishAll() {
+    if (BUSY) return;
     TOKEN = detectToken();
+    if (!TOKEN) { refreshHint(); log("❌ 缺少 GitHub Token。", "err"); return; }
     var drafts = Object.keys(ITEMS).filter(function (s) { return ITEMS[s].isDraft; });
-    if (!drafts.length) { log("没有待发布的草稿。", "err"); return; }
+    if (!drafts.length) { log("没有待发布的草稿。", "warn"); return; }
     if (!window.confirm("确认发布全部 " + drafts.length + " 篇草稿？（将合并为 1 次提交、触发 1 次部署）")) return;
-    $("pubAllBtn").disabled = true;
-    log("开始：准备合并发布 " + drafts.length + " 篇草稿（1 次提交）…");
 
-    var targets = [];
-    // One shared stamp per batch: the whole batch goes to the top together,
-    // and within the batch Hugo keeps its usual title order.
     var stamp = localStamp(new Date());
+    var targets = [];
     drafts.forEach(function (s) {
-      var it = ITEMS[s];
-      var nc = setPublished(it.content, stamp);
-      if (nc === it.content) { log("⚠️ " + s + " 无 draft:true，跳过。", "err"); return; }
-      targets.push({ slug: s, it: it, newContent: nc });
+      var it = ITEMS[s], nc = setPublished(it.content, stamp);
+      if (nc === it.content) { log("⚠️ " + s + " 无 draft:true，跳过。", "warn"); return; }
+      targets.push({ it: it, newContent: nc });
     });
-    if (!targets.length) { log("没有需要改动的草稿。", "err"); $("pubAllBtn").disabled = false; return; }
+    if (!targets.length) { log("没有需要改动的草稿。", "warn"); return; }
 
-    gh("/repos/" + REPO + "/git/refs/heads/" + BRANCH)
-      .then(function (ref) {
-        var commitSha = ref.object.sha;
-        log("✓ 当前分支 HEAD: " + commitSha.slice(0, 8));
-        return gh("/repos/" + REPO + "/git/commits/" + commitSha).then(function (commit) {
-          return { commitSha: commitSha, baseTree: commit.tree.sha };
-        });
-      })
-      .then(function (ctx) {
-        log("正在上传 " + targets.length + " 个文件内容…");
-        return Promise.all(targets.map(function (t) {
-          return gh("/repos/" + REPO + "/git/blobs", {
-            method: "POST",
-            body: JSON.stringify({ content: b64enc(t.newContent), encoding: "base64" })
-          }).then(function (b) { return { path: "content/patterns/" + t.slug + ".md", sha: b.sha }; });
-        })).then(function (blobs) { return { ctx: ctx, blobs: blobs }; });
-      })
-      .then(function (data) {
-        log("正在创建新树（tree）…");
-        return gh("/repos/" + REPO + "/git/trees", {
+    BUSY = true;
+    $("pubAllBtn").disabled = true;
+    try {
+      var head = await gh("/repos/" + REPO + "/commits/" + BRANCH);
+      var commitSha = head.sha, treeSha = head.commit.tree.sha;
+      log("✓ 当前分支 HEAD: " + String(commitSha).slice(0, 8));
+      var groups = chunk(targets, TREE_BATCH);
+      for (var i = 0; i < groups.length; i++) {
+        log("正在写入第 " + (i + 1) + "/" + groups.length + " 批（" + groups[i].length + " 篇）…");
+        var t = await gh("/repos/" + REPO + "/git/trees", {
           method: "POST",
           body: JSON.stringify({
-            base_tree: data.ctx.baseTree,
-            tree: data.blobs.map(function (b) { return { path: b.path, mode: "100644", type: "blob", sha: b.sha }; })
+            base_tree: treeSha,
+            tree: groups[i].map(function (x) {
+              return { path: x.it.path, mode: "100644", type: "blob", content: x.newContent };
+            })
           })
-        }).then(function (tree) { return { ctx: data.ctx, treeSha: tree.sha }; });
-      })
-      .then(function (data) {
-        log("正在创建提交（1 次提交包含所有发布）…");
-        return gh("/repos/" + REPO + "/git/commits", {
-          method: "POST",
-          body: JSON.stringify({
-            message: "publish " + targets.length + " drafts via /anan/drafts",
-            tree: data.treeSha,
-            parents: [data.ctx.commitSha]
-          })
-        }).then(function (commit) { return commit.sha; });
-      })
-      .then(function (newSha) {
-        return gh("/repos/" + REPO + "/git/refs/heads/" + BRANCH, {
-          method: "PATCH",
-          body: JSON.stringify({ sha: newSha, force: false })
         });
-      })
-      .then(function () {
-        targets.forEach(function (t) { t.it.content = t.newContent; t.it.isDraft = false; });
-        log("✅ 已合并发布 " + targets.length + " 篇草稿（1 次提交），GitHub Actions 正在部署（1–3 分钟）。部署后硬刷新前端即可看到。", "ok");
-        render(Object.keys(ITEMS).filter(function (s) { return ITEMS[s].isDraft; }));
-        $("pubAllBtn").disabled = false;
-      })
-      .catch(function (e) {
-        log("❌ 全部发布失败：" + e.message + "（若提示非快进/409，说明期间远程有改动，请重新「加载草稿列表」后再试）", "err");
-        $("pubAllBtn").disabled = false;
+        treeSha = t.sha;
+      }
+      var c = await gh("/repos/" + REPO + "/git/commits", {
+        method: "POST",
+        body: JSON.stringify({
+          message: "publish " + targets.length + " drafts via /anan/drafts",
+          tree: treeSha,
+          parents: [commitSha]
+        })
       });
+      await gh("/repos/" + REPO + "/git/refs/heads/" + BRANCH, {
+        method: "PATCH",
+        body: JSON.stringify({ sha: c.sha, force: false })
+      });
+      targets.forEach(function (x) { x.it.content = x.newContent; x.it.isDraft = false; });
+      log("✅ 已合并发布 " + targets.length + " 篇草稿（1 次提交），GitHub Actions 正在部署（1–3 分钟）。部署后硬刷新前端即可看到。", "ok");
+      render(Object.keys(ITEMS).filter(function (s) { return ITEMS[s].isDraft; }));
+    } catch (e) {
+      log("❌ 全部发布失败：" + explain(e), "err");
+    } finally {
+      BUSY = false;
+      $("pubAllBtn").disabled = false;
+    }
   }
 
   $("loadBtn").addEventListener("click", loadDrafts);
   $("pubAllBtn").addEventListener("click", publishAll);
   $("linkBatch").addEventListener("click", function () { location.href = "batch-pdf.html"; });
-  window.addEventListener("DOMContentLoaded", function () {
-    if (detectToken()) log("✓ 已检测到 Decap 登录态的 GitHub Token，可直接加载。", "ok");
-    else log("未检测到登录态，请先登录 Decap 后台，或手动粘贴 GitHub Token。");
-  });
+  $("token").addEventListener("input", refreshHint);
+  window.addEventListener("DOMContentLoaded", refreshHint);
+  refreshHint();
 })();
 </script>
 </body>
