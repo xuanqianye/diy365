@@ -423,10 +423,20 @@
     return s ? s.split(/[,，]/).map(function (x) { return x.trim(); }).filter(Boolean) : [];
   }
 
+  /* Keep full publish-time precision even for drafts: drafts.html overwrites
+     this with the actual publish moment, but this is the fallback when a draft
+     is published straight from Decap. Asia/Shanghai matches hugo.toml. */
+  function localStamp(d) {
+    var t = new Date(d.getTime() + 8 * 3600 * 1000);   // UTC+8
+    function p(n) { return ("0" + n).slice(-2); }
+    return t.getUTCFullYear() + "-" + p(t.getUTCMonth() + 1) + "-" + p(t.getUTCDate()) +
+      "T" + p(t.getUTCHours()) + ":" + p(t.getUTCMinutes()) + ":" + p(t.getUTCSeconds()) + "+08:00";
+  }
+
   function buildMd(a) {
     var fm = [];
     fm.push('title: "' + escapeFm(a.title) + '"');
-    fm.push("date: " + new Date().toISOString().slice(0, 10));
+    fm.push("date: " + localStamp(new Date()));
     if (a.cats.length) fm.push("categories: [" + a.cats.map(function (c) { return '"' + escapeFm(c) + '"'; }).join(", ") + "]");
     if (a.tags.length) fm.push("tags: [" + a.tags.map(function (t) { return '"' + escapeFm(t) + '"'; }).join(", ") + "]");
     if (a.cover) fm.push("cover: " + a.cover);

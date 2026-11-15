@@ -111,9 +111,26 @@
     if (!dm) return false;
     return /^(true|yes|1)$/i.test(dm[1].trim());
   }
-  function setDraftFalse(c) {
+  /* Hugo sorts .Site.RegularPages by Date descending. Date-only values make
+     everything published on the same day tie, so Hugo falls back to title
+     order and the newest batch ends up buried in the middle of the feed.
+     Stamp the publish moment (Asia/Shanghai, matching hugo.toml timeZone)
+     so every newly published batch goes to the top. */
+  function localStamp(d) {
+    var t = new Date(d.getTime() + 8 * 3600 * 1000);   // UTC+8
+    function p(n) { return ("0" + n).slice(-2); }
+    return t.getUTCFullYear() + "-" + p(t.getUTCMonth() + 1) + "-" + p(t.getUTCDate()) +
+      "T" + p(t.getUTCHours()) + ":" + p(t.getUTCMinutes()) + ":" + p(t.getUTCSeconds()) + "+08:00";
+  }
+  function setPublished(c, stamp) {
     return c.replace(/^---\n([\s\S]*?)\n---/, function (fm) {
-      return fm.replace(/draft:\s*true\s*$/m, "draft: false");
+      var out = fm.replace(/draft:[ \t]*true[ \t]*$/m, "draft: false");
+      if (/^[ \t]*date:[ \t]*.+$/m.test(out)) {
+        out = out.replace(/^([ \t]*date:[ \t]*).+$/m, function (all, pre) { return pre + stamp; });
+      } else {
+        out = out.replace(/^([ \t]*draft:[ \t]*false[ \t]*)$/m, function (all, line) { return line + "\ndate: " + stamp; });
+      }
+      return out;
     });
   }
 
@@ -177,7 +194,7 @@
     if (!it) { log("❌ 找不到 " + slug + " 的缓存，请重新加载列表。", "err"); return; }
     btn.disabled = true;
     log("正在发布 " + slug + " …");
-    var newContent = setDraftFalse(it.content);
+    var newContent = setPublished(it.content, localStamp(new Date()));
     if (newContent === it.content) { log("⚠️ " + slug + " 的 front matter 里没有 draft:true，可能已发布。", "err"); btn.disabled = false; return; }
     gh("/repos/" + REPO + "/contents/content/patterns/" + slug + ".md", {
       method: "PUT",
@@ -201,9 +218,12 @@
     log("开始：准备合并发布 " + drafts.length + " 篇草稿（1 次提交）…");
 
     var targets = [];
+    // One shared stamp per batch: the whole batch goes to the top together,
+    // and within the batch Hugo keeps its usual title order.
+    var stamp = localStamp(new Date());
     drafts.forEach(function (s) {
       var it = ITEMS[s];
-      var nc = setDraftFalse(it.content);
+      var nc = setPublished(it.content, stamp);
       if (nc === it.content) { log("⚠️ " + s + " 无 draft:true，跳过。", "err"); return; }
       targets.push({ slug: s, it: it, newContent: nc });
     });

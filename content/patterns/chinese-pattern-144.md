@@ -1,6 +1,6 @@
 ---
 title: "Chinese Pattern (144)"
-date: 2026-11-15
+date: 2026-11-15T11:15:32+08:00
 categories: ["Amigurumi", "Chinese Pattern"]
 tags: ["Amigurumi", "Crochet", "DIY", "Pattern", "Handmade", "Chinese Pattern"]
 cover: https://pic1.imgdd.cc/i/034xn0rxtwOjS8yddmM0DM.webp
