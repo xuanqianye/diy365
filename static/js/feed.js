@@ -65,6 +65,22 @@
       return ensure(n);
     });
   }
+  /* Load every chunk before the first render. Loading only part-1 makes the
+     UI report the chunk size (500) as if it were the whole catalogue, and
+     makes pagination show 25 pages when there are really 29. Chunks are
+     small JSON arrays, so fetching them in parallel is cheap. */
+  function loadAll() {
+    if (!manifest || !manifest.chunks) return Promise.resolve();
+    var reqs = [];
+    for (var i = 1; i <= manifest.chunks; i++) reqs.push(chunk(i));
+    return Promise.all(reqs).then(function (parts) {
+      pool = [];
+      loaded = manifest.chunks;
+      parts.forEach(function (items) {
+        pool = pool.concat(items.filter(match));
+      });
+    });
+  }
   function card(it) {
     var cover = it.cover
       ? '<img class="card-img" src="' + esc(it.cover) + '" alt="' + esc(it.title) + '" loading="lazy" width="300" height="400">'
@@ -160,7 +176,9 @@
   }
 
   function render(reset) {
-    if (reset) { pool = []; cached = {}; loaded = 0; cursor = 0; page = 1; }
+    // pool is the complete catalogue now; switching mode / page size only
+    // needs to rewind the cursors, not re-fetch the JSON chunks.
+    if (reset) { cursor = 0; page = 1; }
     if (!manifest) return Promise.resolve();
     if (io) { io.disconnect(); io = null; }
     return mode() === 'infinite' ? renderInfinite() : renderPaged();
@@ -176,6 +194,7 @@
   // On load failure leave the server-rendered first-screen cards untouched
   fetch('/data/feed/manifest.json', { cache: 'no-cache' })
     .then(function (r) { if (!r.ok) throw new Error('manifest'); return r.json(); })
-    .then(function (m) { manifest = m; return render(false); })
+    .then(function (m) { manifest = m; return loadAll(); })
+    .then(function () { return render(false); })
     .catch(function () { info.textContent = ''; });
 })();
