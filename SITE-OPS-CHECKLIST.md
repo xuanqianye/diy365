@@ -1,6 +1,6 @@
 # diy365.cc 站点运维清单（建站 · 功能 · 安全 · 应急）
 
-> 最后更新：2026-11-14
+> 最后更新：2026-11-15
 > 用途：站点全部功能部署上线后的总归档。日后需要**重建、排障、应对封站/故障**时，按本清单操作。
 > 适用对象：站长本人（xuanqianye）。所有代码均位于 GitHub 仓库 `xuanqianye/diy365`。
 
@@ -25,7 +25,8 @@ Hugo 静态站点  →  GitHub 仓库(xuanqianye/diy365, main)  →  GitHub Acti
 | 资产 | 位置 / 说明 |
 |---|---|
 | GitHub 仓库 | `https://github.com/xuanqianye/diy365`（main 分支，**公开**） |
-| 本地主工作目录 | `E:/diy365静态钩针图解站`（与 GitHub 同步；另有工作区副本 `C:/Users/47282/WorkBuddy/2026-11-11-22-39-18/diy365`） |
+| **本地主要仓库** | `E:/diy365静态钩针图解站`（与 GitHub 同步；另有工作区副本 `C:/Users/47282/WorkBuddy/2026-11-11-22-39-18/diy365`） |
+| **本地备用仓库（灾备，不参与日常同步）** | `E:/图解站手动备份(备用)/diy365静态钩针图解站`。**只在主要仓库因修改导致无法回退时才启用**，平时不要跟主仓库一起 pull/update；否则两边被同一次坏改动一起污染，灾备失效 |
 | Cloudflare 账户 | 托管域名 `diy365.cc` + Pages 项目 `diy365`（域 `diy365.pages.dev`）+ Worker `diy365-auth` |
 | 域名注册商 | `diy365.cc` 的注册商（改 NS / 续费 / 转移用） |
 | 部署凭证（Secret，**勿泄露、勿进 git**） | GitHub Actions Secret：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`；Worker 环境变量：`GITHUB_CLIENT_SECRET`（diy365-auth）、可选 `ALLOWED_GITHUB_LOGIN` |
@@ -115,7 +116,11 @@ Hugo 静态站点  →  GitHub 仓库(xuanqianye/diy365, main)  →  GitHub Acti
 
 ## 6. 站点被封 / 故障后重新部署上线方法（应急手册）
 
-> 核心信心来源：**源码在 GitHub + 本地 E 盘双备份；Cloudflare 配置在 `cloudflare-backup/` 有存档**。任何单点失效都能重建。
+> 核心信心来源：**源码在 GitHub + 本地 E 盘主仓库 + E 盘备用仓库（灾备冻结）三层；Cloudflare 配置在 `cloudflare-backup/` 有存档**。任何单点失效都能重建。
+>
+> ⚠️ **仓库分工（2026-11-15 站长拍板）**：日常「本地更新」只同步 **工作区副本 + `E:/diy365静态钩针图解站`** 两处；
+> `E:/图解站手动备份(备用)/diy365静态钩针图解站` **绝对不跟着一起更新**，它是主仓库被改坏且自身 git 历史也回不去时的最后一道恢复点。
+> 两边同时更新 = 同一次坏改动会同时污染两份，备用就白设了。
 
 ### 6.1 场景 A：Cloudflare 账号或 diy365.cc 在 CF 侧被封
 1. 注册**新 Cloudflare 账号**（不同邮箱/Payment 信息，避免关联封禁）。
@@ -150,7 +155,9 @@ Hugo 静态站点  →  GitHub 仓库(xuanqianye/diy365, main)  →  GitHub Acti
 
 ### 6.5 场景 E：本地源码丢失
 - `git clone https://github.com/xuanqianye/diy365.git` 到新机器即恢复全部（公开仓库）。
-- 若仓库被设为 private/删除，用 E 盘本地副本兜底。
+- 若仓库被设为 private/删除，用 `E:/diy365静态钩针图解站`（主要仓库）兜底。
+- **仅在主要仓库被改坏且它自己的 git 历史也回不去时**，才从 `E:/图解站手动备份(备用)/diy365静态钩针图解站` 取文件恢复；
+  恢复完不用把备用仓库追到最新，继续保持冻结。
 
 ---
 
@@ -163,6 +170,8 @@ Hugo 静态站点  →  GitHub 仓库(xuanqianye/diy365, main)  →  GitHub Acti
 - **未进备份**：GitHub 2FA 设置（账号端开关，恢复码自行保管）；Superbed token（本地 `.env`，勿提交）；Worker 环境变量 / Secrets：`GITHUB_CLIENT_SECRET`、`ALLOWED_GITHUB_LOGIN`、`CAPTCHA_SECRET`、`ADMIN_KEY`、可选 `GH_TOKEN`（Cloudflare 控制台配置，勿提交）
 
 ### 日常运维速查
+- **「本地更新」= 只 pull 两处**：工作区 `diy365` + `E:/diy365静态钩针图解站`；
+  **不要动 `E:/图解站手动备份(备用)/...`**（灾备冻结，见 §6 开头）。
 - 本地改完 → `git add` / `commit` / `push` → 自动部署（几分钟生效）
 - 后台 `/anan` 改内容 → Decap 提交 → 自动部署
 - **查线上某功能是否生效**：`curl -sL https://diy365.cc/anan/ | grep -F 'idle-timeout'`（跟 308 重定向）；或隐身窗口实测
