@@ -9,12 +9,16 @@
   {{- $pins := partial "url-list.html" .Params.pinImage -}}
   {{- $pinFirst := "" -}}{{- with $pins -}}{{- $pinFirst = index . 0 -}}{{- end -}}
   {{- $cover := partial "first-url.html" (or .Params.cover $pinFirst) -}}
+  {{- $cats := .Params.categories | default (slice) -}}
   {{- $cat := "" -}}
-  {{- with .Params.categories -}}{{- $cat = index . 0 -}}{{- end -}}
+  {{- with $cats -}}{{- $cat = index . 0 -}}{{- end -}}
   {{- $tags := .Params.tags | default (slice) -}}
   {{- $date := "" -}}
   {{- if not .Date.IsZero }}{{ $date = .Date.Format "Jan 2, 2006" }}{{ end }}
-  {{- $items = $items | append (dict "title" .Title "url" .RelPermalink "cover" $cover "category" $cat "tags" $tags "date" $date) -}}
+  {{- /* Keep all categories, not just the first one. Category pages filter on
+         this array; exporting only index 0 made every multi-category pattern
+         disappear from its secondary category (e.g. Chinese Pattern). */ -}}
+  {{- $items = $items | append (dict "title" .Title "url" .RelPermalink "cover" $cover "category" $cat "categories" $cats "tags" $tags "date" $date) -}}
 {{- end -}}
 {{- $mf := dict "total" $total "perChunk" $per "chunks" $chunks -}}
 {{- $m := resources.FromString "data/feed/manifest.json" ($mf | jsonify) -}}

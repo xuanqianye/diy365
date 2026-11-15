@@ -22,7 +22,15 @@
     var m = location.pathname.match(/^\/(categories|tags)\/([^/]+)/);
     if (m) { tax = m[1]; term = decodeURIComponent(m[2]); }
   }
-  term = String(term).toLowerCase();
+  // Hugo term titles ("Chinese Pattern") and URL slugs ("chinese-pattern")
+  // must compare equal, and feed data may use either form.
+  function norm(s) {
+    return String(s == null ? '' : s).toLowerCase().trim()
+      .replace(/[\s_]+/g, '-')
+      .replace(/[^a-z0-9\-\u4e00-\u9fff]/g, '')
+      .replace(/^-+|-+$/g, '');
+  }
+  term = norm(term);
 
   var cached = {}, manifest = null, pool = [], loaded = 0;
   var cursor = 0, page = 1, io = null, working = false;
@@ -46,8 +54,15 @@
 
   function match(it) {
     if (!tax) return true;
-    if (tax === 'categories') return String(it.category || '').toLowerCase() === term;
-    return (it.tags || []).map(String).some(function (t) { return t.toLowerCase() === term; });
+    if (tax === 'categories') {
+      // feed chunks carry the full categories array; fall back to the legacy
+      // single `category` field for older / cached JSON chunks.
+      var cats = it.categories;
+      if (!Array.isArray(cats)) cats = it.category ? [it.category] : [];
+      if (!cats.length && it.category) cats = [it.category];
+      return cats.some(function (c) { return norm(c) === term; });
+    }
+    return (it.tags || []).map(String).some(function (t) { return norm(t) === term; });
   }
   function chunk(i) {
     if (cached[i]) return Promise.resolve(cached[i]);

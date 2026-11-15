@@ -45,7 +45,8 @@
         var all = [];
         parts.forEach(function (arr) { if (Array.isArray(arr)) all = all.concat(arr); });
         all.forEach(function (it) {
-          it._hay = norm([it.title, it.category, (it.tags || []).join(' ')].join(' '));
+          it._hay = norm([it.title, it.category, (it.categories || []).join(' '),
+                          (it.tags || []).join(' ')].join(' '));
         });
         index = all;
         loading = false;
