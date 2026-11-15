@@ -1,8 +1,10 @@
 ---
 title: "Amigurumi (399)"
-date: 2026-11-14
-cover: https://pic1.imgdd.cc/i/034xTiARwScLuZVJ9qH6V9.webp
-pinImage: ["https://pic1.imgdd.cc/i/034xTiARwScLuZVJ9qH6V9.webp", "https://pic1.imgdd.cc/i/034xTiBkenE9rBOZX4XiAw.webp", "https://pic1.imgdd.cc/i/034xTiCsGCj2z1dHGWYkIx.webp", "https://pic1.imgdd.cc/i/034xTiDyIRjPfbpu0iXPte.webp", "https://pic1.imgdd.cc/i/034xTiFXg9rlWPZ6u8liRS.webp", "https://pic1.imgdd.cc/i/034xTiI6Tjp76OFSEke8ZC.webp", "https://pic1.imgdd.cc/i/034xTiJHacsZEsWHKQodCx.webp", "https://pic1.imgdd.cc/i/034xTiKRorn1P62ZQGCpkj.webp", "https://pic1.imgdd.cc/i/034xTiM9CBCOEElaHmiR1U.webp", "https://pic1.imgdd.cc/i/034xTiNFd0wEROpQMUFjUt.webp", "https://pic1.imgdd.cc/i/034xTiP3L0ec6ImJvDxqwW.webp", "https://pic1.imgdd.cc/i/034xTiQLMu1s2kBiHcVMU6.webp", "https://pic1.imgdd.cc/i/034xTiRoK0xecbH8uAdIYE.webp", "https://pic1.imgdd.cc/i/034xTiTSNUazGKePs98REZ.webp", "https://pic1.imgdd.cc/i/034xTiV54p7stmSTrm4q6M.webp", "https://pic1.imgdd.cc/i/034xTiWjEoNjdmWZQPDSsj.webp", "https://pic1.imgdd.cc/i/034xTiY0IHqSleEM8t9ngn.webp", "https://pic1.imgdd.cc/i/034xTiZ3PKjOTBFQZJZTJF.webp"]
+date: 2026-11-15T22:22:32+08:00
+categories: ["Amigurumi"]
+tags: ["Crochet", "DIY", "Pattern", "Handmade", "Amigurumi"]
+cover: https://pic1.imgdd.cc/i/034y3IGDfRnIkujupoiRlr.webp
+pinImage: ["https://pic1.imgdd.cc/i/034y3IGDfRnIkujupoiRlr.webp", "https://pic1.imgdd.cc/i/034y3IHlmQYQxQ4J5Y5VSI.webp", "https://pic1.imgdd.cc/i/034y3ILgbNAHyHWGg8IwL3.webp", "https://pic1.imgdd.cc/i/034y3INDqKLsnMjjIXnVou.webp", "https://pic1.imgdd.cc/i/034y3IQ6uqlkxCYNR69TqI.webp", "https://pic1.imgdd.cc/i/034y3IRtA5bfznvReHRJ2V.webp", "https://pic1.imgdd.cc/i/034y3ITMhKNGnkp37DMBTj.webp", "https://pic1.imgdd.cc/i/034y3IUlAFcqIovLCTQh2Y.webp", "https://pic1.imgdd.cc/i/034y3IWMgk9Xujzzl2M3xd.webp", "https://pic1.imgdd.cc/i/034y3IYEmobZZLx1plwPo1.webp", "https://pic1.imgdd.cc/i/034y3IZytVj1RSqRSxuXOa.webp", "https://pic1.imgdd.cc/i/034y3IbXUqpVcg3pGYkjzC.webp", "https://pic1.imgdd.cc/i/034y3IdCpIaxTfrOorvd62.webp", "https://pic1.imgdd.cc/i/034y3IevrGlZF6jnibI0wv.webp", "https://pic1.imgdd.cc/i/034y3IgRXMfTmPLgewgG4a.webp", "https://pic1.imgdd.cc/i/034y3IivkSvmw1TiX6vIZE.webp", "https://pic1.imgdd.cc/i/034y3IkhDZ74vC6AggnWyd.webp", "https://pic1.imgdd.cc/i/034y3Im5IFkkplXXZ0DKXG.webp"]
 slug: amigurumi-399
-draft: false
+draft: true
 ---

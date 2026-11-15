@@ -1,8 +1,10 @@
 ---
 title: "Amigurumi (410)"
-date: 2026-11-14
-cover: https://pic1.imgdd.cc/i/034xTltKnex4f7WkiOo0mW.webp
-pinImage: ["https://pic1.imgdd.cc/i/034xTltKnex4f7WkiOo0mW.webp", "https://pic1.imgdd.cc/i/034xTlw4PpLvs5hFNkLHkw.webp", "https://pic1.imgdd.cc/i/034xTlxGOvxdTrQXUZE283.webp", "https://pic1.imgdd.cc/i/034xTlyoQ5FWWHEO1BJJ3y.webp", "https://pic1.imgdd.cc/i/034xTm0YWguQuD4PkxhMFU.webp", "https://pic1.imgdd.cc/i/034xTm1oDgH3kbRHmwJK2X.webp", "https://pic1.imgdd.cc/i/034xTm4PFqUoLPmnELDv6A.webp", "https://pic1.imgdd.cc/i/034xTm5pNPe1tnuzUvNlGO.webp", "https://pic1.imgdd.cc/i/034xTm7GHIxqxKV5yAJUjt.webp", "https://pic1.imgdd.cc/i/034xTmAjDqbsRzIF3AzccQ.webp", "https://pic1.imgdd.cc/i/034xTmCDdPh9MxBc4U2D05.webp", "https://pic1.imgdd.cc/i/034xTmDqotm1y18ffHQlGs.webp", "https://pic1.imgdd.cc/i/034xTmFRT4F4CSVwWKTNzC.webp", "https://pic1.imgdd.cc/i/034xTmHE6cV0tfwj0uGPnW.webp", "https://pic1.imgdd.cc/i/034xTmJBZITXk1LQTTbS4M.webp"]
+date: 2026-11-15T22:22:32+08:00
+categories: ["Amigurumi"]
+tags: ["Crochet", "DIY", "Pattern", "Handmade", "Amigurumi"]
+cover: https://pic1.imgdd.cc/i/034y3MIaCXLfj7pYoi4pzY.webp
+pinImage: ["https://pic1.imgdd.cc/i/034y3MIaCXLfj7pYoi4pzY.webp", "https://pic1.imgdd.cc/i/034y3MKQM13gf2h7rP3vWb.webp", "https://pic1.imgdd.cc/i/034y3MMMXjWnyjcHUatK3E.webp", "https://pic1.imgdd.cc/i/034y3MOkui5brtpgS28xj2.webp", "https://pic1.imgdd.cc/i/034y3MRMpKZIrLlBv6CvW3.webp", "https://pic1.imgdd.cc/i/034y3MTGs93dTaYagWKI4n.webp", "https://pic1.imgdd.cc/i/034y3MVAKoWhEC8gwZKU8G.webp", "https://pic1.imgdd.cc/i/034y3MXFz4rhJGFHA0sDss.webp", "https://pic1.imgdd.cc/i/034y3MZY0tZpdbmhv0Oi9C.webp", "https://pic1.imgdd.cc/i/034y3MdIVL8kAoQZ68VcA0.webp", "https://pic1.imgdd.cc/i/034y3MfRl5tR7Lh9DxW94B.webp", "https://pic1.imgdd.cc/i/034y3MiJr2D4aLNlWxz2BM.webp", "https://pic1.imgdd.cc/i/034y3MkpdActRxNC0Waz67.webp", "https://pic1.imgdd.cc/i/034y3Mn4dc90scFNejui0m.webp", "https://pic1.imgdd.cc/i/034y3MprfDYro9KaOpV2yQ.webp"]
 slug: amigurumi-410
-draft: false
+draft: true
 ---
