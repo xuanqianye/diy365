@@ -51,7 +51,7 @@
 <body>
 <div class="wrap">
   <h1>批量发布图解</h1>
-  <p class="sub">两种来源：<strong>PDF 文件</strong>（逐页裁剪上传）或 <strong>图片文件夹</strong>（webp 等原图直传、不切片）。每个 PDF / 每个文件夹生成一篇<strong>草稿</strong>。提交后请到 <a href="drafts.html?v=20261116a">草稿管理页 <code>/anan/drafts.html</code></a> 点「发布」或「全部发布」即可上线（<strong>推荐</strong>，直接改文件更可靠）。也可在 Decap 后台取消「草稿（不发布）」勾选，但后台的「已发布」状态可能显示不准。</p>
+  <p class="sub">两种来源：<strong>PDF 文件</strong>（逐页裁剪上传）或 <strong>图片文件夹</strong>（webp 等原图直传、不切片）。每个 PDF / 每个文件夹生成一篇<strong>草稿</strong>。提交后请到 <a href="drafts.html?v=20261116b">草稿管理页 <code>/anan/drafts.html</code></a> 点「发布」或「全部发布」即可上线（<strong>推荐</strong>，直接改文件更可靠）。也可在 Decap 后台取消「草稿（不发布）」勾选，但后台的「已发布」状态可能显示不准。</p>
 
   <label for="token">GitHub Token（自动读取 Decap 登录态，失败再手动粘贴）</label>
   <input type="password" id="token" placeholder="ghp_xxx 或 github_pat_xxx（留空则尝试复用 Decap 登录态）" autocomplete="off" />
@@ -96,6 +96,7 @@
       • 从 HandmadeV 采集下来的图片是<strong>按文章目录存放</strong>的：选最外层那个父文件夹，它下面的<strong>每个子文件夹</strong>就是一篇文章，标题取子文件夹名。<br>
       • 如果直接选中某一个文章目录（里面直接是图片、没有再下一层），就只生成 1 篇。<br>
       • 只上传 <code>.webp / .jpg / .jpeg / .png / .gif / .avif</code> 图片，其它文件（txt、json、desktop.ini 等）自动跳过；同一文件夹内按文件名<strong>自然排序</strong>（<code>1, 2, 10</code> 而不是 <code>1, 10, 2</code>），<strong>原图直传，不做任何切片或重新编码</strong>，第一张自动作封面。<br>
+      • 文件夹名里的<strong>批次编号</strong>（<code>001-xxx</code> 或 <code>xxx-001</code>）会在生成标题与 slug 时<strong>自动去掉</strong>：发布出去的标题不带编号，编号只用于你本地按批上传时区分；同一篇重复上传也只会覆盖同一份草稿，不会多出一篇。<br>
       • 每个文件夹最多 200 张、单张 ≤ 20MB；超出的图片跳过并记录。上传仍计入下方 1000 张/小时配额。
     </div>
     <div id="dirPreview" class="hint" style="background:#fff;border-color:var(--bd)"></div>
@@ -207,6 +208,19 @@
       } catch (e) { /* not json */ }
     }
     return null;
+  }
+
+  // 文件夹名里的批次编号（改名脚本加的）：开头 001- 或结尾 -001。
+  // 生成标题/slug 时自动去掉，让同一篇文章的 slug 固定：即使重复上传，
+  // 也只会覆盖同一份草稿，不会多出一篇重复文章。只用于文件夹模式，PDF 文件名不受影响。
+  // 排除 19xx/20xx 开头的 4 位数，避免误删正常标题里的年份（如 crochet-2026）。
+  function publishNameOf(name) {
+    var raw = String(name || "");
+    var s = raw.replace(/^(?!19\d{2}|20\d{2})\d{3,6}[-_\s]+/, "")
+               .replace(/[-_\s]+(?!19\d{2}|20\d{2})\d{3,6}$/, "");
+    // 去掉编号后若没有英文字母/数字（如「钩针图解-001」→「钩针图解」），
+    // 保留原名，否则所有文章都会挤到同一个 slug「post」。
+    return /[a-z0-9]/i.test(s) ? s : raw;
   }
 
   // 标题：保留序号，去扩展名，下划线/连字符转空格
@@ -501,13 +515,28 @@
     var head = document.createElement("div");
     head.innerHTML = "<b>分组预览</b>：共 " + g.order.length + " 篇文章、" + total + " 张图片" +
       (g.skipped ? "，已跳过 " + g.skipped + " 个非图片文件" : "") +
-      (g.hasSub ? "（按子文件夹分组）" : "（所选文件夹内直接是图片，整体 1 篇）");
+      (g.hasSub ? "（按子文件夹分组）" : "（所选文件夹内直接是图片，整体 1 篇）") +
+      "<br><span style='color:var(--mu)'>文件夹名里的批次编号（如 <code>001-</code> / <code>-001</code>）在生成标题与 slug 时会自动去掉；下面「发布标题」就是最终效果。</span>";
     box.appendChild(head);
+    // 去掉编号后如果有多篇重名，slug 会自动加 -2 后缀，提前提醒用户核对是否重复采集
+    var pubSeen = {}, pubDup = 0;
+    g.order.forEach(function (k) {
+      var p = publishNameOf(k);
+      if (pubSeen[p]) pubDup++; else pubSeen[p] = 1;
+    });
+    if (pubDup) {
+      var warn = document.createElement("div");
+      warn.className = "err";
+      warn.textContent = "⚠️ 有 " + pubDup + " 个文件夹去掉编号后标题重复，它们的 slug 会自动加 -2 后缀；请确认不是把同一篇重复选进来了。";
+      box.appendChild(warn);
+    }
     var list = document.createElement("div");
     list.style.marginTop = "6px";
     g.order.slice(0, 20).forEach(function (k) {
       var d = document.createElement("div");
-      d.textContent = "• " + k + " → " + g.groups[k].length + " 张";   // 用 textContent，文件夹名可能含 HTML
+      var pub = publishNameOf(k);
+      d.textContent = "• " + k + " → " + g.groups[k].length + " 张" +
+        (pub !== k ? " ｜ 发布标题：" + cleanTitle(pub) : "");   // 用 textContent，文件夹名可能含 HTML
       list.appendChild(d);
     });
     if (g.order.length > 20) {
@@ -646,12 +675,14 @@
 
     if (task.kind === "folder") {
       var key = task.key;
+      var pubName = publishNameOf(key);        // 去掉 001- / -001 批次编号后再生成标题与 slug
       var b = {
-        title: cleanTitle(key), slug: slugify(key, usedSlugs, true),
+        title: cleanTitle(pubName), slug: slugify(pubName, usedSlugs, true),
         cats: catsNow, tags: tagsNow, images: [], cover: "", error: "", incomplete: false
       };
       log("▶ [" + (ARTICLES.length + 1) + "/" + totalFiles + "] 开始处理文件夹：" + key +
-        "（" + task.files.length + " 张图）→ 标题「" + b.title + "」");
+        "（" + task.files.length + " 张图）→ 标题「" + b.title + "」" +
+        (pubName !== key ? "（已自动去掉批次编号）" : ""));
       processFolder(key, task.files, b.slug, function (msg) { log("   " + msg); })
         .then(function (res) {
           b.images = res.urls; b.cover = res.urls[0] || "";
@@ -740,7 +771,8 @@
       unit = "个文件夹";
       log("分组结果：" + g.order.length + " 篇（" +
         (g.hasSub ? "按子文件夹拆分" : "所选文件夹整体 1 篇") + "）" +
-        (g.skipped ? "，已跳过 " + g.skipped + " 个非图片文件" : "") + "。", "ok");
+        (g.skipped ? "，已跳过 " + g.skipped + " 个非图片文件" : "") +
+        "。文件夹名里的批次编号（001- / -001）会自动去掉，标题与 slug 不含编号。", "ok");
     }
     var q0 = quotaCount();
     if (q0 >= softLimit()) {
