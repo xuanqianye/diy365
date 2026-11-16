@@ -55,7 +55,7 @@
 <body>
 <div class="wrap">
   <h1>批量发布图解</h1>
-  <p class="sub">两种来源：<strong>PDF 文件</strong>（逐页裁剪上传）或 <strong>图片文件夹</strong>（webp 等原图直传、不切片）。每个 PDF / 每个文件夹生成一篇<strong>草稿</strong>。提交后请到 <a href="drafts.html?v=20261116e">草稿管理页 <code>/anan/drafts.html</code></a> 点「发布」或「全部发布」即可上线（<strong>推荐</strong>，直接改文件更可靠）。也可在 Decap 后台取消「草稿（不发布）」勾选，但后台的「已发布」状态可能显示不准。</p>
+  <p class="sub">两种来源：<strong>PDF 文件</strong>（逐页裁剪上传）或 <strong>图片文件夹</strong>（webp 等原图直传、不切片）。每个 PDF / 每个文件夹生成一篇<strong>草稿</strong>。提交后请到 <a href="drafts.html?v=20261116f">草稿管理页 <code>/anan/drafts.html</code></a> 点「发布」或「全部发布」即可上线（<strong>推荐</strong>，直接改文件更可靠）。也可在 Decap 后台取消「草稿（不发布）」勾选，但后台的「已发布」状态可能显示不准。</p>
 
   <label for="token">GitHub Token（自动读取 Decap 登录态，失败再手动粘贴）</label>
   <input type="password" id="token" placeholder="ghp_xxx 或 github_pat_xxx（留空则尝试复用 Decap 登录态）" autocomplete="off" />
@@ -482,6 +482,22 @@
   var dirBatches = [];
   var dirBatchSeq = 0;
 
+  // 每张图片「归属哪篇文章」在读入时就固化，避免依赖浏览器可能丢失的 webkitRelativePath。
+  // 拖子文件夹 / 部分套壳浏览器下 webkitRelativePath 会变成空或只剩文件名，
+  // 之前会导致按图片文件名分组 → 标题只剩 001/002 编号。
+  var FILE_OWNER = (typeof WeakMap !== "undefined") ? new WeakMap() : null;
+  function setOwner(f, key) {
+    if (!f) return;
+    try { f.__hmvOwner = key; } catch (e) { /* 只读对象忽略 */ }
+    if (FILE_OWNER) { try { FILE_OWNER.set(f, key); } catch (e) { /* ignore */ } }
+  }
+  function getOwner(f) {
+    if (!f) return "";
+    var k = "";
+    if (FILE_OWNER) { try { k = FILE_OWNER.get(f) || ""; } catch (e) { /* ignore */ } }
+    return k || f.__hmvOwner || "";
+  }
+
   function isImageFile(f) {
     return /\.(webp|jpe?g|png|gif|avif)$/i.test(f.name) ||
       !!(f.type && f.type.indexOf("image/") === 0);
@@ -499,18 +515,23 @@
   // 有子文件夹时按第 2 段分组（每个子文件夹 = 1 篇）；直接选中单篇文章目录时整体 = 1 篇。
   function groupFolderFiles(fileList) {
     var arr = Array.prototype.slice.call(fileList);
+    // 先看有没有读入时固化的归属标记：有就用它，彻底绕开 webkitRelativePath 丢失问题。
+    var anyOwner = arr.some(function (f) { return !!getOwner(f); });
     var hasSub = arr.some(function (f) {
       return (f.webkitRelativePath || f.name).split("/").filter(Boolean).length >= 3;
     });
     var groups = {}, order = [], skipped = 0;
     arr.forEach(function (f) {
+      var owner = getOwner(f);
       var parts = (f.webkitRelativePath || f.name).split("/").filter(Boolean);
       var rootName = parts[0] || "untitled";
-      var key = (hasSub && parts.length >= 3) ? parts[1] : rootName;
+      // 优先级：固化归属 > 浏览器路径推断
+      var key = owner || ((hasSub && parts.length >= 3) ? parts[1] : rootName);
       if (!isImageFile(f)) { skipped++; return; }
       if (!groups[key]) { groups[key] = []; order.push(key); }
       groups[key].push(f);
     });
+    hasSub = anyOwner || hasSub;
     order.forEach(function (k) {
       groups[k].sort(function (a, b) {
         return naturalCompare(a.webkitRelativePath || a.name, b.webkitRelativePath || b.name);
@@ -537,6 +558,28 @@
     }
     var firstPath = arr[0].webkitRelativePath || arr[0].name;
     var root = label || (firstPath.split("/").filter(Boolean)[0] || "文件夹");
+
+    // 固化每张图的归属文章名（读入时算一次，之后不再依赖 webkitRelativePath）：
+    //   - 路径有 3 段「父/子/图」且整批确实是这种结构 → 按子文件夹拆分，owner = 子文件夹名。
+    //   - 路径只有 2 段「文件夹/图」（选中单个文章目录）→ owner = 该文件夹名（拖入用 label，
+    //     按钮选择用路径第一段），整体 1 篇。
+    // 这样「拖入父文件夹」和「拖入单个文章目录」都能正确分组。
+    var subMode = arr.some(function (f) {
+      return ((f.webkitRelativePath || f.name).split("/").filter(Boolean).length >= 3);
+    });
+    arr.forEach(function (f) {
+      if (getOwner(f)) return;
+      var parts = (f.webkitRelativePath || f.name).split("/").filter(Boolean);
+      var key;
+      if (subMode && parts.length >= 3) {
+        key = parts[1];                       // 父文件夹下的子文件夹 = 一篇
+      } else if (parts.length >= 2) {
+        key = parts[0] || label || root;      // 单个文章文件夹 = 一篇
+      } else {
+        key = label || root || parts[0] || "文件夹";  // 路径退化：用拖入/选择的文件夹名兜底
+      }
+      setOwner(f, key);
+    });
     var last = arr[arr.length - 1];
     var fp = [root, arr.length, arr[0].name, arr[0].size, last.name, last.size].join("|");
     if (dirBatches.some(function (b) { return b.fp === fp; })) {
