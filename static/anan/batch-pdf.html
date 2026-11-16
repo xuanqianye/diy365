@@ -53,9 +53,25 @@
   </style>
 </head>
 <body>
+<script>
+// 缓存破除：后台页每次「新会话首次打开」自动跳到带唯一参数的 URL，
+// 强制浏览器去服务器取最新版，避免套壳浏览器死守旧缓存导致功能不更新。
+// 同一会话内只跳一次（sessionStorage 标记），不会造成循环。
+(function () {
+  try {
+    if (location.protocol !== "http:" && location.protocol !== "https:") return; // file:// 自测不跳
+    var p = new URLSearchParams(location.search);
+    if (!p.has("_cv") && !sessionStorage.getItem("_bp_cv_done")) {
+      sessionStorage.setItem("_bp_cv_done", "1");
+      p.set("_cv", String(Date.now()));
+      location.replace(location.pathname + "?" + p.toString());
+    }
+  } catch (e) { /* 忽略：老浏览器不支持也不影响主功能 */ }
+})();
+</script>
 <div class="wrap">
   <h1>批量发布图解</h1>
-  <p class="sub">两种来源：<strong>PDF 文件</strong>（逐页裁剪上传）或 <strong>图片文件夹</strong>（webp 等原图直传、不切片）。每个 PDF / 每个文件夹生成一篇<strong>草稿</strong>。提交后请到 <a href="drafts.html?v=20261116f">草稿管理页 <code>/anan/drafts.html</code></a> 点「发布」或「全部发布」即可上线（<strong>推荐</strong>，直接改文件更可靠）。也可在 Decap 后台取消「草稿（不发布）」勾选，但后台的「已发布」状态可能显示不准。</p>
+  <p class="sub">两种来源：<strong>PDF 文件</strong>（逐页裁剪上传）或 <strong>图片文件夹</strong>（webp 等原图直传、不切片）。每个 PDF / 每个文件夹生成一篇<strong>草稿</strong>。提交后请到 <a href="drafts.html?v=20261116g">草稿管理页 <code>/anan/drafts.html</code></a> 点「发布」或「全部发布」即可上线（<strong>推荐</strong>，直接改文件更可靠）。也可在 Decap 后台取消「草稿（不发布）」勾选，但后台的「已发布」状态可能显示不准。</p>
 
   <label for="token">GitHub Token（自动读取 Decap 登录态，失败再手动粘贴）</label>
   <input type="password" id="token" placeholder="ghp_xxx 或 github_pat_xxx（留空则尝试复用 Decap 登录态）" autocomplete="off" />

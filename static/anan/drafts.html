@@ -33,6 +33,19 @@
   </style>
 </head>
 <body>
+<script>
+(function () {
+  try {
+    if (location.protocol !== "http:" && location.protocol !== "https:") return;
+    var p = new URLSearchParams(location.search);
+    if (!p.has("_cv") && !sessionStorage.getItem("_bp_cv_done")) {
+      sessionStorage.setItem("_bp_cv_done", "1");
+      p.set("_cv", String(Date.now()));
+      location.replace(location.pathname + "?" + p.toString());
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
 <div class="wrap">
   <h1>草稿管理</h1>
   <p class="sub">列出所有 <code>draft: true</code> 的「钩针图解」草稿。点「发布」即把 draft 改为 false 并触发部署；点「编辑」跳 Decap 后台修改后再发布。<strong>「全部发布」会合并成 1 次提交、只触发 1 次部署</strong>。需先登录 Decap 后台或粘贴 GitHub Token。</p>
@@ -458,7 +471,7 @@
 
   $("loadBtn").addEventListener("click", loadDrafts);
   $("pubAllBtn").addEventListener("click", publishAll);
-  $("linkBatch").addEventListener("click", function () { location.href = "batch-pdf.html?v=20261116f"; });
+  $("linkBatch").addEventListener("click", function () { location.href = "batch-pdf.html?v=20261116g"; });
   $("token").addEventListener("input", refreshHint);
   window.addEventListener("DOMContentLoaded", refreshHint);
   refreshHint();
