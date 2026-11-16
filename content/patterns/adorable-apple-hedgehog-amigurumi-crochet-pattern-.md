@@ -1,10 +1,10 @@
 ---
-title: "adorable apple hedgehog amigurumi crochet pattern with faux fur hood and texture 521dca"
-date: 2026-11-16T23:55:12+08:00
+title: "adorable apple hedgehog amigurumi crochet pattern with faux fur hood and textured stitch details"
+date: 2026-11-17T00:23:36+08:00
 categories: ["Amigurumi"]
 tags: ["Amigurumi", "Crochet", "DIY", "Pattern", "Handmade"]
-cover: https://pic1.imgdd.cc/i/034yNjugpbYqj1cPjj9Vnh.webp
-pinImage: ["https://pic1.imgdd.cc/i/034yNjugpbYqj1cPjj9Vnh.webp", "https://pic1.imgdd.cc/i/034yNjwKtLIodrNjwFuzIf.webp", "https://pic1.imgdd.cc/i/034yNjxnYBYEbBAFwx3rBW.webp", "https://pic1.imgdd.cc/i/034yNjzAMKiSnRxwp3XeVz.webp", "https://pic1.imgdd.cc/i/034yNk0gKINoG7NBx4VgGv.webp", "https://pic1.imgdd.cc/i/034yNk2A3fiCEQUXiTGOJ5.webp", "https://pic1.imgdd.cc/i/034yNk3L4Htz6V0VMEwsCM.webp", "https://pic1.imgdd.cc/i/034yNk4o192h0g6bp8miAG.webp", "https://pic1.imgdd.cc/i/034yNk6PdjcznJCGbWN4v5.webp", "https://pic1.imgdd.cc/i/034yNk80mX7nzSh3wrFRsk.webp", "https://pic1.imgdd.cc/i/034yNk9cbG9TAwjwKNEhTj.webp", "https://pic1.imgdd.cc/i/034yNkBXus1PZxAxQX8HIb.webp", "https://pic1.imgdd.cc/i/034yNkCvbA17g32Ck6EIGm.webp", "https://pic1.imgdd.cc/i/034yNkEUOZkpm57rrZXKDC.webp"]
+cover: https://pic1.imgdd.cc/i/034yfqGhdKyA40JOEPtEGH.webp
+pinImage: ["https://pic1.imgdd.cc/i/034yfqGhdKyA40JOEPtEGH.webp", "https://pic1.imgdd.cc/i/034yfqHuOmmCFYu5AbOTcX.webp", "https://pic1.imgdd.cc/i/034yfqJ7YUNrFiuTz1DeZf.webp", "https://pic1.imgdd.cc/i/034yfqJsdSfjoQgzS1E7rc.webp", "https://pic1.imgdd.cc/i/034yfqKffaNqfFHkIogvO5.webp", "https://pic1.imgdd.cc/i/034yfqLtzp5KIfF2OnYZR4.webp", "https://pic1.imgdd.cc/i/034yfqMpnhynIqmr9owHT1.webp", "https://pic1.imgdd.cc/i/034yfqNZKMsRq0nhcbjCSc.webp", "https://pic1.imgdd.cc/i/034yfqPaCQINxBETpQ5PVS.webp", "https://pic1.imgdd.cc/i/034yfqRpmvYYGoxisw8gU9.webp", "https://pic1.imgdd.cc/i/034yfqTRztuhnAJz6RJDJB.webp", "https://pic1.imgdd.cc/i/034yfqUIdfnvV398gZeF95.webp", "https://pic1.imgdd.cc/i/034yfqV9ZLudsIL3NaxdEM.webp", "https://pic1.imgdd.cc/i/034yfqW1HUkDLDKktXjv9c.webp"]
 slug: adorable-apple-hedgehog-amigurumi-crochet-pattern-
-draft: false
+draft: true
 ---
