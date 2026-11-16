@@ -71,8 +71,8 @@
 </script>
 <div class="wrap">
   <h1>批量发布图解</h1>
-  <p style="background:#fff4d6;border:1px solid #e8c666;color:#7a5a10;border-radius:8px;padding:10px 12px;font-size:.9rem;margin:0 0 12px">⚠️ 本页已被新版取代。若你遇到「拖入文件夹却提示是散图 / 标题只剩 001」，请改用新地址：<strong><a href="upload.html?v=20261116h" style="color:#0a5">/anan/upload.html</a></strong>（新版已修复该问题）。</p>
-  <p class="sub">两种来源：<strong>PDF 文件</strong>（逐页裁剪上传）或 <strong>图片文件夹</strong>（webp 等原图直传、不切片）。每个 PDF / 每个文件夹生成一篇<strong>草稿</strong>。提交后请到 <a href="drafts.html?v=20261116g">草稿管理页 <code>/anan/drafts.html</code></a> 点「发布」或「全部发布」即可上线（<strong>推荐</strong>，直接改文件更可靠）。也可在 Decap 后台取消「草稿（不发布）」勾选，但后台的「已发布」状态可能显示不准。</p>
+  <p style="background:#fff4d6;border:1px solid #e8c666;color:#7a5a10;border-radius:8px;padding:10px 12px;font-size:.9rem;margin:0 0 12px">⚠️ 本页已被新版取代。若你遇到「拖入文件夹却提示是散图 / 标题只剩 001」，请改用新地址：<strong><a href="upload.html?v=20261116i" style="color:#0a5">/anan/upload.html</a></strong>（新版已修复该问题）。</p>
+  <p class="sub">两种来源：<strong>PDF 文件</strong>（逐页裁剪上传）或 <strong>图片文件夹</strong>（webp 等原图直传、不切片）。每个 PDF / 每个文件夹生成一篇<strong>草稿</strong>。提交后请到 <a href="drafts.html?v=20261116i">草稿管理页 <code>/anan/drafts.html</code></a> 点「发布」或「全部发布」即可上线（<strong>推荐</strong>，直接改文件更可靠）。也可在 Decap 后台取消「草稿（不发布）」勾选，但后台的「已发布」状态可能显示不准。</p>
 
   <label for="token">GitHub Token（自动读取 Decap 登录态，失败再手动粘贴）</label>
   <input type="password" id="token" placeholder="ghp_xxx 或 github_pat_xxx（留空则尝试复用 Decap 登录态）" autocomplete="off" />
@@ -595,6 +595,10 @@
       } else {
         key = label || root || parts[0] || "文件夹";  // 路径退化：用拖入/选择的文件夹名兜底
       }
+      // 最后一道防线：分组名绝不能是图片文件名（001.jpg），否则标题只剩编号。
+      if (/\.(webp|jpe?g|png|gif|avif)$/i.test(key)) {
+        key = label || root || parts[0] || "文件夹";
+      }
       setOwner(f, key);
     });
     var last = arr[arr.length - 1];
@@ -654,8 +658,11 @@
       if (entry.isFile) {
         entry.file(function (f) {
           try {
+            // 递归进入文件时 path 已经拼成「…/文件名」（下面 readDirEntry(e, path + "/" + e.name)），
+            // 不能再拼 f.name，否则「文件夹/001.jpg/001.jpg」会被当成 3 段 → 分组取到 "001.jpg"。
+            var rel = path || f.name;
             Object.defineProperty(f, "webkitRelativePath", {
-              value: path + "/" + f.name, configurable: true
+              value: rel, configurable: true
             });
           } catch (e) { /* ignore */ }
           resolve([f]);
