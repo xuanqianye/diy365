@@ -55,7 +55,7 @@
 <body>
 <div class="wrap">
   <h1>批量发布图解</h1>
-  <p class="sub">两种来源：<strong>PDF 文件</strong>（逐页裁剪上传）或 <strong>图片文件夹</strong>（webp 等原图直传、不切片）。每个 PDF / 每个文件夹生成一篇<strong>草稿</strong>。提交后请到 <a href="drafts.html?v=20261116c">草稿管理页 <code>/anan/drafts.html</code></a> 点「发布」或「全部发布」即可上线（<strong>推荐</strong>，直接改文件更可靠）。也可在 Decap 后台取消「草稿（不发布）」勾选，但后台的「已发布」状态可能显示不准。</p>
+  <p class="sub">两种来源：<strong>PDF 文件</strong>（逐页裁剪上传）或 <strong>图片文件夹</strong>（webp 等原图直传、不切片）。每个 PDF / 每个文件夹生成一篇<strong>草稿</strong>。提交后请到 <a href="drafts.html?v=20261116d">草稿管理页 <code>/anan/drafts.html</code></a> 点「发布」或「全部发布」即可上线（<strong>推荐</strong>，直接改文件更可靠）。也可在 Decap 后台取消「草稿（不发布）」勾选，但后台的「已发布」状态可能显示不准。</p>
 
   <label for="token">GitHub Token（自动读取 Decap 登录态，失败再手动粘贴）</label>
   <input type="password" id="token" placeholder="ghp_xxx 或 github_pat_xxx（留空则尝试复用 Decap 登录态）" autocomplete="off" />
@@ -96,13 +96,16 @@
   <div id="dirPane" hidden>
     <label for="dirFiles">添加图片文件夹（可反复添加多个，最后一次批量处理）</label>
     <input type="file" id="dirFiles" webkitdirectory directory multiple />
-    <div id="dirDrop" class="dir-drop">也可以把<strong>多个文件夹一次性拖到这里</strong>（Chrome / Edge）：每个父文件夹下的子文件夹 = 一篇草稿</div>
+    <div id="dirDrop" class="dir-drop">或者在资源管理器里 Ctrl 多选文件夹后<strong>拖到本页任意位置</strong>（<strong>仅 Chrome / Edge</strong>）：每个父文件夹下的子文件夹 = 一篇草稿</div>
     <div class="row" style="margin-top:8px">
       <button type="button" class="btn-mini" id="dirClearBtn">清空已添加文件夹</button>
     </div>
     <div id="dirPickedList" class="hint" style="background:#fff;border-color:var(--bd)"></div>
     <div class="hint">
-      • <strong>浏览器限制一次只能选一个文件夹</strong>：点上面按钮选一个后，可以再点、再选，文件夹会累加在「已添加」列表里；也可以按住 Ctrl 在资源管理器里选<strong>多个文件夹</strong>直接拖进虚线框。所有文件夹会在你点「开始处理」后<strong>一次批量上传</strong>，不用分批点多次。<br>
+      • <strong>网页的「选择文件夹」窗口一次只能选一个，按 Ctrl 多选无效（浏览器限制，不是故障）</strong>。要一次加多个，只有两种办法：<br>
+      　<strong>① 反复点选</strong>（任何浏览器都行）：点上面按钮选一个 → 再点、再选，全部累加到「已添加」列表。<br>
+      　<strong>② 拖入多个</strong>（<strong>仅 Chrome / Edge</strong>）：在 Windows 资源管理器里按住 Ctrl 选中多个文件夹，拖到<strong>本页任意位置</strong>即可。360 / QQ / 搜狗等浏览器不支持拖入，请用办法 ①。<br>
+      所有加进来的文件夹会在点一次「开始处理」后<strong>批量上传</strong>。<br>
       • 从 HandmadeV 采集下来的图片是<strong>按文章目录存放</strong>的：选最外层那个父文件夹（如 <code>images_chart</code>），它下面的<strong>每个子文件夹</strong>就是一篇文章，标题取子文件夹名。<br>
       • 如果直接选中某一个文章目录（里面直接是图片、没有再下一层），就只生成 1 篇。<br>
       • 只上传 <code>.webp / .jpg / .jpeg / .png / .gif / .avif</code> 图片，其它文件（txt、json、desktop.ini 等）自动跳过；同一文件夹内按文件名<strong>自然排序</strong>（<code>1, 2, 10</code> 而不是 <code>1, 10, 2</code>），<strong>原图直传，不做任何切片或重新编码</strong>，第一张自动作封面。<br>
@@ -614,12 +617,16 @@
   }
 
   function onDirDrop(e) {
+    if (MODE !== "folder") return;   // PDF 模式不接管页面拖放
     e.preventDefault();
     e.stopPropagation();
     var drop = $("dirDrop");
     if (drop) drop.classList.remove("over");
     var dt = e.dataTransfer;
-    if (!dt || !dt.items || !dt.items.length) return;
+    if (!dt || !dt.items || !dt.items.length) {
+      log("⚠️ 拖进来的内容读不到。请拖「文件夹」本身（不是文件夹里的图片）；若用的是 360 / QQ / 搜狗等浏览器，请改用 Chrome / Edge，或点上方按钮逐个添加。", "err");
+      return;
+    }
     var entries = [];
     for (var i = 0; i < dt.items.length; i++) {
       var it = dt.items[i];
@@ -1086,15 +1093,20 @@
     log("已移除文件夹「" + (b ? b.label : id) + "」；当前共 " + dirBatches.length +
       " 个文件夹、" + allDirFiles().length + " 张图片。", "ok");
   });
-  var dirPane = $("dirPane"), dropZone = $("dirDrop");
-  dirPane.addEventListener("dragover", function (e) {
+  var dropZone = $("dirDrop");
+  // 拖放监听放在整个 document：拖到页面任何位置都能接住，不再要求精确拖进虚线框。
+  document.addEventListener("dragover", function (e) {
+    if (MODE !== "folder") return;
+    var hasFiles = e.dataTransfer && Array.prototype.some.call(e.dataTransfer.types || [],
+      function (t) { return t === "Files"; });
+    if (!hasFiles) return;
     e.preventDefault();
     if (dropZone) dropZone.classList.add("over");
   });
-  dirPane.addEventListener("dragleave", function (e) {
-    if (!dirPane.contains(e.relatedTarget) && dropZone) dropZone.classList.remove("over");
+  document.addEventListener("dragleave", function (e) {
+    if (!e.relatedTarget && dropZone) dropZone.classList.remove("over");
   });
-  dirPane.addEventListener("drop", onDirDrop);
+  document.addEventListener("drop", onDirDrop);
   $("procBtn").addEventListener("click", startProcessing);
   $("pauseBtn").addEventListener("click", pauseProcessing);
   $("resumeBtn").addEventListener("click", resumeProcessing);
