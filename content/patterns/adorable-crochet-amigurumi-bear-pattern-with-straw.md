@@ -1,10 +1,10 @@
 ---
 title: "adorable crochet amigurumi bear pattern with strawberry beret and tomato bag"
-date: 2026-11-16T23:55:12+08:00
+date: 2026-11-17T00:30:24+08:00
 categories: ["Amigurumi"]
 tags: ["Amigurumi", "Crochet", "DIY", "Pattern", "Handmade"]
-cover: https://pic1.imgdd.cc/i/034yNjbP2rjVxrCLA5uH0c.webp
-pinImage: ["https://pic1.imgdd.cc/i/034yNjbP2rjVxrCLA5uH0c.webp", "https://pic1.imgdd.cc/i/034yNjcVldoMoXLBlGsOAr.webp", "https://pic1.imgdd.cc/i/034yNjdNNgn9j650DXWlaj.webp", "https://pic1.imgdd.cc/i/034yNje7mKyVqzJq0BJJML.webp", "https://pic1.imgdd.cc/i/034yNjfDQpJxtNKG2rmDbQ.webp", "https://pic1.imgdd.cc/i/034yNjgkTKl2qcVr08GW4M.webp"]
+cover: https://pic1.imgdd.cc/i/034yg286mWWtmKdc07AulL.webp
+pinImage: ["https://pic1.imgdd.cc/i/034yg286mWWtmKdc07AulL.webp", "https://pic1.imgdd.cc/i/034yg296yYtrzJbn2bu2Co.webp", "https://pic1.imgdd.cc/i/034yg2AV9GusUpafC6t4Yq.webp", "https://pic1.imgdd.cc/i/034yg2B9VBrRS2sKeJBAeb.webp", "https://pic1.imgdd.cc/i/034yg2ByCD4a2SDvkbdzby.webp", "https://pic1.imgdd.cc/i/034yg2D2g0nbS5AuNaWxu9.webp"]
 slug: adorable-crochet-amigurumi-bear-pattern-with-straw
-draft: false
+draft: true
 ---
