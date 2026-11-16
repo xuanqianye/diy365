@@ -1,6 +1,6 @@
 ---
 title: "adorable crochet ice cream cone bear and chick amigurumi pattern with step by step instructions"
-date: 2026-11-17T00:36:20+08:00
+date: 2026-11-17T00:37:05+08:00
 categories: ["Amigurumi"]
 tags: ["Amigurumi", "Crochet", "DIY", "Pattern", "Handmade"]
 cover: https://pic1.imgdd.cc/i/034ygAPR3rI5lZ3yZhzymF.webp
