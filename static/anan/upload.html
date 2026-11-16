@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>DIY365 后台 — 批量发布（PDF / 图片文件夹）</title>
+  <style>
+    :root { --p:#d96b86; --pd:#c2536f; --bg:#fffaf7; --bd:#f0e3e0; --tx:#2d2a2e; --mu:#8a8288; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--tx); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans",sans-serif; line-height:1.6; padding:24px; }
+    .wrap { max-width:880px; margin:0 auto; }
+    h1 { font-size:1.5rem; color:var(--pd); margin:0 0 4px; }
+    .sub { color:var(--mu); margin:0 0 18px; font-size:.9rem; }
+    label { display:block; font-weight:600; margin:14px 0 6px; font-size:.92rem; }
+    textarea, input[type=text], input[type=password], input[type=file] { width:100%; border:1px solid var(--bd); border-radius:10px; padding:10px 12px; font:inherit; background:#fff; color:var(--tx); }
+    .hint { font-size:.82rem; color:var(--mu); background:#fdeef1; border:1px solid #f6d9e0; border-radius:8px; padding:10px 12px; margin-top:8px; }
+    .hint code { background:#fff; padding:1px 5px; border-radius:4px; }
+    .quota { font-size:.84rem; color:#7a5a20; background:#fff8ea; border:1px solid #f0dfb8; border-left:4px solid #e0a83a; border-radius:8px; padding:10px 12px; margin-top:10px; }
+    .quota strong { color:#a46b12; }
+    .counter { background:#fff; border:1px solid var(--bd); border-radius:10px; padding:12px 14px; margin-top:10px; }
+    .counter-head { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; font-size:.88rem; }
+    .counter-ctrl { display:flex; align-items:center; gap:6px; color:var(--mu); font-size:.82rem; }
+    .counter input[type=number] { width:78px; border:1px solid var(--bd); border-radius:8px; padding:5px 8px; font:inherit; background:#fff; color:var(--tx); }
+    .btn-mini { padding:5px 10px; font-size:.78rem; font-weight:600; background:#fff; color:var(--pd); border:1px solid var(--bd); border-radius:8px; }
+    .bar { height:9px; background:#f3e9e5; border-radius:99px; overflow:hidden; margin:10px 0 8px; }
+    .bar-fill { height:100%; width:0; background:#3ba776; border-radius:99px; transition:width .3s ease, background .3s ease; }
+    .counter.warn .bar-fill { background:#e0a83a; }
+    .counter.danger .bar-fill { background:#d6453d; }
+    .counter-line { display:flex; gap:18px; flex-wrap:wrap; font-size:.82rem; color:var(--mu); }
+    .quota-msg { margin-top:8px; font-size:.82rem; color:var(--mu); }
+    .counter.warn .quota-msg { color:#a46b12; }
+    .counter.danger .quota-msg { color:#c23b33; font-weight:600; }
+    .counter-tune { margin-top:10px; padding-top:9px; border-top:1px dashed var(--bd); font-size:.8rem; color:var(--mu); display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .counter-tune input[type=number] { width:78px; border:1px solid var(--bd); border-radius:8px; padding:4px 8px; font:inherit; background:#fff; color:var(--tx); }
+    .card { background:#fff; border:1px solid var(--bd); border-radius:10px; padding:14px; margin-top:14px; }
+    .row { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+    button { border:0; border-radius:10px; padding:11px 20px; font:inherit; font-weight:700; cursor:pointer; }
+    .btn-primary { background:var(--p); color:#fff; }
+    .btn-primary:disabled { opacity:.5; cursor:not-allowed; }
+    .btn-ghost { background:#fff; color:var(--pd); border:1px solid var(--bd); }
+    #status { margin-top:16px; font-size:.88rem; white-space:pre-wrap; background:#fff; border:1px solid var(--bd); border-radius:10px; padding:12px; max-height:340px; overflow:auto; }
+    #preview { margin-top:12px; }
+    .pv { background:#fff; border:1px solid var(--bd); border-radius:8px; padding:8px 10px; margin-bottom:6px; font-size:.85rem; }
+    .pv b { color:var(--pd); }
+    .err { color:#d6453d; }
+    .ok { color:#2e9e5b; }
+    .dir-drop { margin-top:8px; border:2px dashed var(--bd); border-radius:10px; padding:10px 12px; text-align:center; color:var(--mu); font-size:.82rem; background:#fff; cursor:default; }
+    .dir-drop.over { border-color:var(--p); background:#fff3f6; color:var(--pd); }
+    .picked-row { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:4px; }
+    .picked-row span { overflow-wrap:anywhere; }
+    a { color:var(--pd); }
+  </style>
+</head>
+<body>
+<script>
+// 缓存破除：后台页每次「新会话首次打开」自动跳到带唯一参数的 URL，
+// 强制浏览器去服务器取最新版，避免套壳浏览器死守旧缓存导致功能不更新。
+// 同一会话内只跳一次（sessionStorage 标记），不会造成循环。
+(function () {
+  try {
+    if (location.protocol !== "http:" && location.protocol !== "https:") return; // file:// 自测不跳
+    var p = new URLSearchParams(location.search);
+    if (!p.has("_cv") && !sessionStorage.getItem("_bp_cv_done")) {
+      sessionStorage.setItem("_bp_cv_done", "1");
+      p.set("_cv", String(Date.now()));
+      location.replace(location.pathname + "?" + p.toString());
+    }
+  } catch (e) { /* 忽略：老浏览器不支持也不影响主功能 */ }
+})();
+</script>
+<div class="wrap">
+  <h1>批量发布图解</h1>
+  <p style="background:#e7f7ee;border:1px solid #9ad6b4;color:#16653a;border-radius:8px;padding:8px 12px;font-size:.85rem;margin:0 0 12px"><strong>✅ 新版页面 v20261116h</strong>（修复了「拖文件夹被误判成散图、标题只剩 001」的问题）。如果你在别处看到的旧页面还有这个毛病，请用本页这个新地址 <code>/anan/upload.html</code>。</p>
+  <p class="sub">两种来源：<strong>PDF 文件</strong>（逐页裁剪上传）或 <strong>图片文件夹</strong>（webp 等原图直传、不切片）。每个 PDF / 每个文件夹生成一篇<strong>草稿</strong>。提交后请到 <a href="drafts.html?v=20261116g">草稿管理页 <code>/anan/drafts.html</code></a> 点「发布」或「全部发布」即可上线（<strong>推荐</strong>，直接改文件更可靠）。也可在 Decap 后台取消「草稿（不发布）」勾选，但后台的「已发布」状态可能显示不准。</p>
+
+  <label for="token">GitHub Token（自动读取 Decap 登录态，失败再手动粘贴）</label>
+  <input type="password" id="token" placeholder="ghp_xxx 或 github_pat_xxx（留空则尝试复用 Decap 登录态）" autocomplete="off" />
+
+  <div class="card">
+    <strong>选择来源</strong>
+    <div class="row" style="margin-top:8px">
+      <label style="display:flex;align-items:center;gap:6px;margin:0;font-weight:600;cursor:pointer">
+        <input type="radio" name="srcMode" value="pdf" checked style="width:auto" /> PDF 文件（逐页转图）
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;margin:0;font-weight:600;cursor:pointer">
+        <input type="radio" name="srcMode" value="folder" style="width:auto" /> 图片文件夹（原图直传，不切片）
+      </label>
+    </div>
+  </div>
+
+  <div class="card">
+    <strong>统一设置（应用到每篇）</strong>
+    <label for="cats">分类（逗号分隔，可空）</label>
+    <input type="text" id="cats" placeholder="例如：Amigurumi,玩偶" />
+    <label for="tags">标签（逗号分隔，可空）</label>
+    <input type="text" id="tags" placeholder="例如：钩织,图解,免费" />
+    <div class="hint">
+      • <b>标题</b>自动取 PDF 文件名 / 文件夹名（去扩展名，下划线/连字符转空格）；PDF 文件名序号保留，例如 <code>0012_sunflower.pdf</code> → <code>0012 sunflower</code>；<strong>文件夹名里的批次编号会自动去掉</strong>，例如 <code>001-sunflower</code> → <code>sunflower</code>。<br>
+      • 分类 / 标签建议填与「分类管理 / 标签管理」里<strong>已有的名称</strong>，前台才会出现对应聚合页；填新名称 Hugo 也会自动建页。
+    </div>
+  </div>
+
+  <div id="pdfPane">
+    <label for="files">选择 PDF 文件（可多选，每个 = 一篇草稿）</label>
+    <input type="file" id="files" accept=".pdf,application/pdf" multiple />
+    <div class="hint">
+      PDF 限制：每本 ≤ 100MB、≤ 100 页；长页会自动切片成多张图。每个 PDF 会变成若干张步骤图，第一张自动作封面。
+      处理在浏览器本地完成，可能耗时较久（页数多时请耐心等待，不要关闭页面）。可点「暂停」暂停当前批次，再点「继续」从下一本恢复（暂停在当前本处理完后生效）。
+    </div>
+  </div>
+
+  <div id="dirPane" hidden>
+    <label for="dirFiles">添加图片文件夹（可反复添加多个，最后一次批量处理）</label>
+    <input type="file" id="dirFiles" webkitdirectory directory multiple />
+    <div id="dirDrop" class="dir-drop">或者在资源管理器里 Ctrl 多选文件夹后<strong>拖到本页任意位置</strong>（<strong>仅 Chrome / Edge</strong>）：每个父文件夹下的子文件夹 = 一篇草稿</div>
+    <div class="row" style="margin-top:8px">
+      <button type="button" class="btn-mini" id="dirClearBtn">清空已添加文件夹</button>
+    </div>
+    <div id="dirPickedList" class="hint" style="background:#fff;border-color:var(--bd)"></div>
+    <div class="hint">
+      • <strong>网页的「选择文件夹」窗口一次只能选一个，按 Ctrl 多选无效（浏览器限制，不是故障）</strong>。要一次加多个，只有两种办法：<br>
+      　<strong>① 反复点选</strong>（任何浏览器都行）：点上面按钮选一个 → 再点、再选，全部累加到「已添加」列表。<br>
+      　<strong>② 拖入多个</strong>（<strong>仅 Chrome / Edge</strong>）：在 Windows 资源管理器里按住 Ctrl 选中多个文件夹，拖到<strong>本页任意位置</strong>即可。360 / QQ / 搜狗等浏览器不支持拖入，请用办法 ①。<br>
+      所有加进来的文件夹会在点一次「开始处理」后<strong>批量上传</strong>。<br>
+      • 从 HandmadeV 采集下来的图片是<strong>按文章目录存放</strong>的：选最外层那个父文件夹（如 <code>images_chart</code>），它下面的<strong>每个子文件夹</strong>就是一篇文章，标题取子文件夹名。<br>
+      • 如果直接选中某一个文章目录（里面直接是图片、没有再下一层），就只生成 1 篇。<br>
+      • 只上传 <code>.webp / .jpg / .jpeg / .png / .gif / .avif</code> 图片，其它文件（txt、json、desktop.ini 等）自动跳过；同一文件夹内按文件名<strong>自然排序</strong>（<code>1, 2, 10</code> 而不是 <code>1, 10, 2</code>），<strong>原图直传，不做任何切片或重新编码</strong>，第一张自动作封面。<br>
+      • 文件夹名里的<strong>批次编号</strong>（<code>001-xxx</code> 或 <code>xxx-001</code>）会在生成标题与 slug 时<strong>自动去掉</strong>：发布出去的标题不带编号，编号只用于你本地按批上传时区分；同一篇重复上传也只会覆盖同一份草稿，不会多出一篇。<br>
+      • 每个文件夹最多 200 张、单张 ≤ 20MB；超出的图片跳过并记录。上传仍计入下方 1000 张/小时配额。
+    </div>
+    <div id="dirPreview" class="hint" style="background:#fff;border-color:var(--bd)"></div>
+  </div>
+
+  <div class="quota">
+    <strong>图床套餐提示</strong>：目前图床套餐，上传限制 <strong>1000 张 / 小时</strong>。
+    PDF 模式每页约产生 1 张图（长页自动切片成多张）；文件夹模式<strong>每张图片算 1 张</strong>。超出限额后该篇会标记为不完整、提交时自动跳过。
+    下方实时统计：同一小时内多次批量上传会累计，满 1 小时自动从 0 重新计数；接近上限时自动暂停，无需自己估算。
+  </div>
+
+  <div class="counter" id="quotaBox">
+    <div class="counter-head">
+      <strong>本次上传计数</strong>
+      <span class="counter-ctrl">
+        自动暂停阈值
+        <input type="number" id="quotaLimit" min="1" max="1000" step="10" value="950" /> 张
+        <button class="btn-mini" id="resetQuotaBtn" type="button">重置计数</button>
+      </span>
+    </div>
+    <div class="bar"><div class="bar-fill" id="quotaBar"></div></div>
+    <div class="counter-line">
+      <span id="quotaNow">本小时 0 / 1000 张</span>
+      <span id="quotaSession">本次会话 0 张</span>
+      <span id="quotaReset">新的一小时，计数从 0 开始</span>
+    </div>
+    <div class="quota-msg" id="quotaMsg"></div>
+    <div class="counter-tune">
+      旧页面已传过图？可校正本小时已用张数：
+      <input type="number" id="quotaAdjust" min="0" max="1000" value="0" /> 张
+      <button class="btn-mini" id="applyQuotaBtn" type="button">应用校正</button>
+    </div>
+  </div>
+
+  <div class="row">
+    <button class="btn-primary" id="procBtn">① 开始处理</button>
+    <button class="btn-ghost" id="pauseBtn" disabled>⏸ 暂停</button>
+    <button class="btn-primary" id="resumeBtn" disabled>▶ 继续</button>
+    <button class="btn-primary" id="commitBtn" disabled>② 生成草稿并提交</button>
+    <button class="btn-ghost" id="clearBtn">清空</button>
+  </div>
+
+  <div id="preview"></div>
+  <div id="status"></div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var REPO = "xuanqianye/diy365";
+  var BRANCH = "main";
+  var API = "https://api.github.com";
+
+  // ---- Superbed（从 config.yml 复用的公开 key；Decap 在浏览器直传，本就公开）----
+  var SUPERBED_ENDPOINT = "https://api.superbed.cn/upload";
+  var SUPERBED_TOKEN = "41871f8e5d6823960d3128b1ffb518a7";
+
+  // ---- pdf.js（站点已内置）----
+  var PDF_LIB = "/js/vendor/pdf.min.mjs";
+  var PDF_WORKER = "/js/vendor/pdf.worker.min.mjs";
+  var MAX_PDF_BYTES = 100 * 1024 * 1024;
+  var MAX_PDF_PAGES = 100;
+  var MAX_IMAGES_PER_FOLDER = 200;              // 每个文件夹最多上传多少张
+  var MAX_IMAGE_BYTES = 20 * 1024 * 1024;      // 单张图片上限
+  var MODE = "pdf";                             // 'pdf' | 'folder'
+  var MAX_CANVAS_W = 1500;
+  var SLICE_RATIO = 1.7;
+  var MAX_SLICES = 6;
+  var pdfjs = null;
+
+  // ---- 图床配额：固定 1 小时窗口累计（本地持久化，跨刷新 / 多标签共享）----
+  var QUOTA_KEY = "diy365_superbed_uploads_v1";
+  var QUOTA_LIMIT_KEY = "diy365_superbed_softlimit_v1";
+  var QUOTA_WINDOW_MS = 60 * 60 * 1000;
+  var QUOTA_HARD = 1000;
+  var sessionUploads = 0;   // 本次打开页面后成功上传的张数
+  var autoPaused = false;   // 是否由配额触发的暂停
+  var quotaOverride = false;// 用户确认「仍要继续」后忽略软阈值
+  var lastTruncated = false;// 当前 PDF 是否因配额少传了图片
+
+  var TOKEN = null;
+  var ARTICLES = [];
+
+  var $ = function (id) { return document.getElementById(id); };
+  function log(msg, cls) {
+    var s = $("status");
+    var line = document.createElement("div");
+    if (cls) line.className = cls;
+    line.textContent = msg;
+    s.appendChild(line);
+    s.scrollTop = s.scrollHeight;
+  }
+  function escapeFm(s) { return String(s).replace(/"/g, '\\"'); }
+  function b64(str) { return btoa(unescape(encodeURIComponent(str))); }
+
+  // 1) 从 localStorage 找 Decap/CMS 登录态里的 GitHub token
+  function detectToken() {
+    var manual = $("token").value.trim();
+    if (manual) return manual;
+    var re = /^(gh[op]_|github_pat_|[0-9a-f]{40})$/;
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      var v = localStorage.getItem(k);
+      if (!/[a-z]*(decap|cms|netlify|github)[a-z]*/i.test(k)) continue;
+      try {
+        var obj = JSON.parse(v);
+        var t = obj.token || obj.access_token || (obj.data && obj.data.token) || (obj.data && obj.data.access_token);
+        if (t && re.test(t)) return t;
+      } catch (e) { /* not json */ }
+    }
+    return null;
+  }
+
+  // 文件夹名里的批次编号（改名脚本加的）：开头 001- 或结尾 -001。
+  // 生成标题/slug 时自动去掉，让同一篇文章的 slug 固定：即使重复上传，
+  // 也只会覆盖同一份草稿，不会多出一篇重复文章。只用于文件夹模式，PDF 文件名不受影响。
+  // 排除 19xx/20xx 开头的 4 位数，避免误删正常标题里的年份（如 crochet-2026）。
+  function publishNameOf(name) {
+    var raw = String(name || "");
+    var s = raw.replace(/^(?!19\d{2}|20\d{2})\d{3,6}[-_\s]+/, "")
+               .replace(/[-_\s]+(?!19\d{2}|20\d{2})\d{3,6}$/, "");
+    // 去掉编号后若没有英文字母/数字（如「钩针图解-001」→「钩针图解」），
+    // 保留原名，否则所有文章都会挤到同一个 slug「post」。
+    return /[a-z0-9]/i.test(s) ? s : raw;
+  }
+
+  // 标题：保留序号，去扩展名，下划线/连字符转空格
+  function cleanTitle(name) {
+    return (name || "").replace(/\.[^.]+$/, "")
+      .replace(/_/g, " ").replace(/-/g, " ")
+      .replace(/\s+/g, " ").trim();
+  }
+  function slugify(name, used, noExtStrip) {
+    var raw = name || "";
+    if (!noExtStrip) raw = raw.replace(/\.[^.]+$/, "");   // 文件夹名可能含句点，不能当扩展名砍掉
+    var s = raw.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50) || "post";
+    var base = s, n = 2;
+    while (used[base]) { base = s + "-" + n; n++; }
+    used[base] = true;
+    return base;
+  }
+
+  // ---- 图床配额：固定 1 小时窗口累计（跨批次 / 跨刷新 / 多标签；满 1 小时整体归零）----
+  // 窗口起点 = 本窗口第一张成功上传的时间；窗口内多次批量上传的张数相加，
+  // 到 1 小时后整窗清零，从 0 重新开始。
+  function readQuota() {
+    var o;
+    try { o = JSON.parse(localStorage.getItem(QUOTA_KEY) || "null"); } catch (e) { o = null; }
+    if (Array.isArray(o)) o = { start: o.length ? o[o.length - 1] : 0, count: o.length }; // 兼容旧格式
+    if (!o || typeof o.start !== "number" || typeof o.count !== "number" || o.count < 0) {
+      o = { start: 0, count: 0 };
+    }
+    if (o.start && Date.now() - o.start >= QUOTA_WINDOW_MS) {
+      o = { start: 0, count: 0 };   // 超过 1 小时 → 重新计数
+      saveQuota(o);
+    }
+    return o;
+  }
+  function saveQuota(o) {
+    try { localStorage.setItem(QUOTA_KEY, JSON.stringify(o)); } catch (e) { /* storage full */ }
+  }
+  function quotaCount() { return readQuota().count; }
+  function softLimit() {
+    var el = $("quotaLimit");
+    var v = parseInt((el && el.value) || "950", 10);
+    if (!isFinite(v) || v < 1) v = 950;
+    return Math.min(v, QUOTA_HARD);
+  }
+  function quotaWindowMins() {
+    var o = readQuota();
+    if (!o.start || !o.count) return 0;
+    return Math.max(0, Math.ceil((o.start + QUOTA_WINDOW_MS - Date.now()) / 60000));
+  }
+  function shouldStopUploads() {
+    var n = quotaCount();
+    if (n >= QUOTA_HARD) return "hard";                       // 硬上限：无论如何都不再上传
+    if (!quotaOverride && n >= softLimit()) return "soft";    // 软阈值：自动暂停
+    return "";
+  }
+  function updateQuotaUI() {
+    var n = quotaCount(), lim = softLimit(), pct = Math.min(100, Math.round(n / QUOTA_HARD * 100));
+    var box = $("quotaBox");
+    if (box) {
+      box.classList.remove("warn", "danger");
+      if (n >= QUOTA_HARD || (autoPaused && n > 0)) box.classList.add("danger");
+      else if (n >= lim * 0.8) box.classList.add("warn");
+    }
+    var bar = $("quotaBar");
+    if (bar) bar.style.width = pct + "%";
+    setText("quotaNow", "本小时 " + n + " / " + QUOTA_HARD + " 张（" + pct + "%）");
+    setText("quotaSession", "本次会话 " + sessionUploads + " 张");
+    var mins = quotaWindowMins();
+    setText("quotaReset", mins > 0
+      ? ("满 1 小时后重新计数（约 " + mins + " 分钟）")
+      : "新的一小时，计数从 0 开始");
+    var msg = $("quotaMsg");
+    if (!msg) return;
+    if (autoPaused && n === 0) {
+      msg.textContent = "✓ 本小时窗口已满 1 小时，计数从 0 重新开始。点「继续」即可恢复剩余队列。";
+    } else if (autoPaused) {
+      msg.textContent = "⏸ 已自动暂停（阈值 " + lim + " 张）。当前 PDF 剩余图片不再上传，队列已保留；" +
+        "等本小时窗口满 1 小时自动归零，或确认图床配额已刷新后点「重置计数」，再点「继续」。";
+    } else if (n >= QUOTA_HARD) {
+      msg.textContent = "⛔ 本小时已达 1000 张硬上限，上传已停止。";
+    } else if (n >= lim * 0.8) {
+      msg.textContent = "接近阈值：再上传约 " + Math.max(0, lim - n) + " 张就会自动暂停，建议准备停手。";
+    } else {
+      msg.textContent = "同一小时内多次批量上传会累计；满 1 小时自动从 0 重新计数。" +
+        "达到 " + lim + " 张自动暂停，到 1000 张强制停止。";
+    }
+  }
+  function setText(id, txt) { var el = $(id); if (el) el.textContent = txt; }
+  function triggerAutoPause(n) {
+    autoPaused = true; paused = true;
+    setProcUI("paused");
+    log("⏸ 已自动暂停：本小时累计已上传 " + n + " 张" +
+      (n >= QUOTA_HARD ? "，达到图床 1000 张硬上限" : "，达到自动暂停阈值 " + softLimit() + " 张") + "。", "err");
+    log("   当前项剩余图片不再上传（已传的会保留并标为「不完整」，提交时自动跳过）；剩余 " +
+      queue.length + " 项仍在队列。等窗口满 1 小时自动归零，或确认配额刷新后点「重置计数」，再点「继续」。", "ok");
+    updateQuotaUI();
+  }
+  function recordUpload() {
+    var o = readQuota();
+    if (!o.start) o.start = Date.now();   // 本窗口第一张上传，开启 1 小时计时
+    o.count += 1;
+    saveQuota(o);
+    sessionUploads++;
+    var n = o.count;
+    updateQuotaUI();
+    if (!autoPaused && (n >= QUOTA_HARD || (!quotaOverride && n >= softLimit()))) triggerAutoPause(n);
+    return n;
+  }
+  function resetQuota() {
+    try { localStorage.removeItem(QUOTA_KEY); } catch (e) { /* ignore */ }
+    sessionUploads = 0; autoPaused = false; quotaOverride = false;
+    updateQuotaUI();
+    log("✓ 已重置本小时计数：从 0 张重新累计（只清本浏览器记录，不改变图床套餐实际配额）。", "ok");
+  }
+  function applyQuotaAdjust() {
+    var el = $("quotaAdjust");
+    var v = parseInt((el && el.value) || "0", 10);
+    if (!isFinite(v) || v < 0) v = 0;
+    v = Math.min(v, QUOTA_HARD);
+    el.value = v;
+    var o = readQuota();
+    saveQuota({ start: o.start || Date.now(), count: v });
+    autoPaused = false; quotaOverride = false;
+    updateQuotaUI();
+    log("✓ 已把本小时计数校正为 " + v + " 张（保留原窗口起点，满 1 小时仍会自动归零）。", "ok");
+  }
+
+  // ---- Superbed 上传（复刻 superbed-uploader.js）----
+  function uploadBlob(blob, name) {
+    var fd = new FormData();
+    fd.append("file", blob, name || "image.webp");
+    fd.append("token", SUPERBED_TOKEN);
+    fd.append("categories", "diy365");
+    return fetch(SUPERBED_ENDPOINT, { method: "POST", body: fd })
+      .then(function (r) {
+        return r.text().then(function (txt) {
+          var d = null;
+          try { d = JSON.parse(txt); } catch (e) { d = { _raw: txt }; }
+          var url = d.url || (d.data && d.data.url) || d.src || (d.data && d.data.src);
+          if (!r.ok || !url || (typeof d.err !== "undefined" && d.err !== 0)) {
+            var msg = d.error || d.msg || d.message ||
+              (typeof d.err !== "undefined" ? ("err=" + d.err) : "") || txt || ("HTTP " + (r.status || "err"));
+            throw new Error(String(msg).slice(0, 160));
+          }
+          return url;
+        });
+      });
+  }
+
+  function canvasToImage(canvas) {
+    return new Promise(function (resolve) {
+      canvas.toBlob(function (b) {
+        if (b && b.type === "image/webp") { resolve({ blob: b, ext: "webp" }); return; }
+        canvas.toBlob(function (b2) {
+          resolve({ blob: b2 || b, ext: "jpg" });
+        }, "image/jpeg", 0.88);
+      }, "image/webp", 0.88);
+    });
+  }
+
+  function loadPdfjs() {
+    if (pdfjs) return Promise.resolve(pdfjs);
+    return import(PDF_LIB).then(function (mod) {
+      mod.GlobalWorkerOptions.workerSrc = PDF_WORKER;
+      pdfjs = mod;
+      return mod;
+    });
+  }
+
+  // 逐页渲染 + 长页切片 + 转图 + 上传，返回图片 URL 数组
+  function processPdf(file, onStatus) {
+    if (file.size > MAX_PDF_BYTES) {
+      return Promise.reject(new Error("PDF 超过 100MB，请先压缩：" + file.name));
+    }
+    lastTruncated = false;
+    return loadPdfjs().then(function (lib) {
+      return file.arrayBuffer().then(function (buf) {
+        return lib.getDocument({ data: buf }).promise;
+      }).then(function (doc) {
+        var pages = Math.min(doc.numPages, MAX_PDF_PAGES);
+        var results = [];
+        var chain = Promise.resolve();
+        for (var p = 1; p <= pages; p++) {
+          (function (pageNo) {
+            chain = chain.then(function () {
+              onStatus && onStatus("转换 " + file.name + " 第 " + pageNo + "/" + doc.numPages + " 页…");
+              return doc.getPage(pageNo);
+            }).then(function (page) {
+              var vp = page.getViewport({ scale: 1.5 });
+              var scale = Math.min(1, MAX_CANVAS_W / vp.width) * 1.5;
+              var vp2 = page.getViewport({ scale: scale });
+              var c = document.createElement("canvas");
+              c.width = Math.max(1, Math.round(vp2.width));
+              c.height = Math.max(1, Math.round(vp2.height));
+              return page.render({ canvasContext: c.getContext("2d"), viewport: vp2 }).promise.then(function () { return c; });
+            }).then(function (c) {
+              var n = Math.min(Math.ceil(c.height / (c.width * SLICE_RATIO)), MAX_SLICES) || 1;
+              var base = file.name.replace(/\.pdf$/i, "").replace(/[^A-Za-z0-9_-]+/g, "-").slice(0, 40) || "pattern";
+              var seq = Promise.resolve();
+              for (var s = 0; s < n; s++) {
+                (function (idx, total) {
+                  seq = seq.then(function () {
+                    var stop = shouldStopUploads();
+                    if (stop) {
+                      if (!lastTruncated) {
+                        lastTruncated = true;
+                        onStatus && onStatus("⏸ " + (stop === "hard" ? "已达 1000 张/小时硬上限" : "已达自动暂停阈值") +
+                          "，本 PDF 剩余图片不再上传");
+                      }
+                      return;
+                    }
+                    var y = Math.round(idx * c.height / total);
+                    var h = Math.round((idx + 1) * c.height / total) - y;
+                    var seg = document.createElement("canvas");
+                    seg.width = c.width; seg.height = Math.max(1, h);
+                    seg.getContext("2d").drawImage(c, 0, y, c.width, h, 0, 0, c.width, h);
+                    return canvasToImage(seg).then(function (img) {
+                      var name = base + "-p" + pageNo + (total > 1 ? "-s" + (idx + 1) : "") + "." + img.ext;
+                      return uploadBlob(img.blob, name).then(function (url) {
+                        var n = recordUpload();
+                        results.push(url);
+                        onStatus && onStatus("已上传 " + name + "（本本 " + results.length +
+                          " 张 ｜ 本小时累计 " + n + "/1000）");
+                      });
+                    });
+                  });
+                })(s, n);
+              }
+              return seq;
+            });
+          })(p);
+        }
+        return chain.then(function () {
+          if (doc.numPages > MAX_PDF_PAGES) {
+            onStatus && onStatus(file.name + " 共 " + doc.numPages + " 页，仅转换前 " + MAX_PDF_PAGES + " 页");
+          }
+          return results;
+        });
+      });
+    });
+  }
+
+  /* ---------------- 图片文件夹模式（原图直传，无切片 / 无重新编码） ---------------- */
+  // 原生 webkitdirectory 一次只能选一个文件夹；这里把多次选择 / 多次拖入的文件累加起来，
+  // 点一次「开始处理」就批量处理全部来源。每个批次保留 webkitRelativePath，分组逻辑不变。
+  var dirBatches = [];
+  var dirBatchSeq = 0;
+
+  // 每张图片「归属哪篇文章」在读入时就固化，避免依赖浏览器可能丢失的 webkitRelativePath。
+  // 拖子文件夹 / 部分套壳浏览器下 webkitRelativePath 会变成空或只剩文件名，
+  // 之前会导致按图片文件名分组 → 标题只剩 001/002 编号。
+  var FILE_OWNER = (typeof WeakMap !== "undefined") ? new WeakMap() : null;
+  function setOwner(f, key) {
+    if (!f) return;
+    try { f.__hmvOwner = key; } catch (e) { /* 只读对象忽略 */ }
+    if (FILE_OWNER) { try { FILE_OWNER.set(f, key); } catch (e) { /* ignore */ } }
+  }
+  function getOwner(f) {
+    if (!f) return "";
+    var k = "";
+    if (FILE_OWNER) { try { k = FILE_OWNER.get(f) || ""; } catch (e) { /* ignore */ } }
+    return k || f.__hmvOwner || "";
+  }
+
+  function isImageFile(f) {
+    return /\.(webp|jpe?g|png|gif|avif)$/i.test(f.name) ||
+      !!(f.type && f.type.indexOf("image/") === 0);
+  }
+  function naturalCompare(a, b) {
+    try {
+      return new Intl.Collator(undefined, { numeric: true, sensitivity: "base" }).compare(a, b);
+    } catch (e) { return a < b ? -1 : (a > b ? 1 : 0); }
+  }
+  function safeName(s) {
+    return (s || "image").replace(/[^A-Za-z0-9_-]+/g, "-").slice(0, 40) || "image";
+  }
+
+  // webkitRelativePath 形如「父目录/子文件夹/001.webp」。
+  // 有子文件夹时按第 2 段分组（每个子文件夹 = 1 篇）；直接选中单篇文章目录时整体 = 1 篇。
+  function groupFolderFiles(fileList) {
+    var arr = Array.prototype.slice.call(fileList);
+    // 先看有没有读入时固化的归属标记：有就用它，彻底绕开 webkitRelativePath 丢失问题。
+    var anyOwner = arr.some(function (f) { return !!getOwner(f); });
+    var hasSub = arr.some(function (f) {
+      return (f.webkitRelativePath || f.name).split("/").filter(Boolean).length >= 3;
+    });
+    var groups = {}, order = [], skipped = 0;
+    arr.forEach(function (f) {
+      var owner = getOwner(f);
+      var parts = (f.webkitRelativePath || f.name).split("/").filter(Boolean);
+      var rootName = parts[0] || "untitled";
+      // 优先级：固化归属 > 浏览器路径推断
+      var key = owner || ((hasSub && parts.length >= 3) ? parts[1] : rootName);
+      if (!isImageFile(f)) { skipped++; return; }
+      if (!groups[key]) { groups[key] = []; order.push(key); }
+      groups[key].push(f);
+    });
+    hasSub = anyOwner || hasSub;
+    order.forEach(function (k) {
+      groups[k].sort(function (a, b) {
+        return naturalCompare(a.webkitRelativePath || a.name, b.webkitRelativePath || b.name);
+      });
+    });
+    // 防呆：分组名如果长得像图片文件名（001.jpg / 2.webp），说明拖进来的是「散图」
+    // 而不是「文件夹」——目录层级丢了，会导致标题只剩编号。提前标出来拦截。
+    var badKeys = order.filter(function (k) { return /\.(webp|jpe?g|png|gif|avif)$/i.test(k); });
+    return { groups: groups, order: order, skipped: skipped, hasSub: hasSub, badKeys: badKeys };
+  }
+
+  function allDirFiles() {
+    var all = [];
+    dirBatches.forEach(function (b) { all = all.concat(b.files); });
+    return all;
+  }
+
+  // 累加一个文件夹来源。quiet=true 用于批量拖入时少刷屏。
+  function addDirBatch(files, label, quiet) {
+    var arr = Array.prototype.slice.call(files || []).filter(isImageFile);
+    if (!arr.length) {
+      if (!quiet) log("⚠️ 所选文件夹里没有可用图片（只支持 webp / jpg / png / gif / avif）。", "err");
+      return false;
+    }
+    var firstPath = arr[0].webkitRelativePath || arr[0].name;
+    var root = label || (firstPath.split("/").filter(Boolean)[0] || "文件夹");
+
+    // 固化每张图的归属文章名（读入时算一次，之后不再依赖 webkitRelativePath）：
+    //   - 路径有 3 段「父/子/图」且整批确实是这种结构 → 按子文件夹拆分，owner = 子文件夹名。
+    //   - 路径只有 2 段「文件夹/图」（选中单个文章目录）→ owner = 该文件夹名（拖入用 label，
+    //     按钮选择用路径第一段），整体 1 篇。
+    // 这样「拖入父文件夹」和「拖入单个文章目录」都能正确分组。
+    var subMode = arr.some(function (f) {
+      return ((f.webkitRelativePath || f.name).split("/").filter(Boolean).length >= 3);
+    });
+    arr.forEach(function (f) {
+      if (getOwner(f)) return;
+      var parts = (f.webkitRelativePath || f.name).split("/").filter(Boolean);
+      var key;
+      if (subMode && parts.length >= 3) {
+        key = parts[1];                       // 父文件夹下的子文件夹 = 一篇
+      } else if (parts.length >= 2) {
+        key = parts[0] || label || root;      // 单个文章文件夹 = 一篇
+      } else {
+        key = label || root || parts[0] || "文件夹";  // 路径退化：用拖入/选择的文件夹名兜底
+      }
+      setOwner(f, key);
+    });
+    var last = arr[arr.length - 1];
+    var fp = [root, arr.length, arr[0].name, arr[0].size, last.name, last.size].join("|");
+    if (dirBatches.some(function (b) { return b.fp === fp; })) {
+      if (!quiet) log("⏭ 文件夹「" + root + "」内容与已添加的完全相同，已跳过（避免重复上传）。", "err");
+      return false;
+    }
+    dirBatches.push({ id: ++dirBatchSeq, label: root, files: arr, fp: fp });
+    if (!quiet) log("＋ 已添加文件夹「" + root + "」：" + arr.length + " 张图片；累计 " +
+      dirBatches.length + " 个文件夹、" + allDirFiles().length + " 张。", "ok");
+    renderPickedList();
+    renderDirPreview();
+    return true;
+  }
+
+  function resetDirBatches() {
+    dirBatches = []; dirBatchSeq = 0;
+    try { $("dirFiles").value = ""; } catch (e) { /* ignore */ }
+    renderPickedList();
+    renderDirPreview();
+  }
+
+  function renderPickedList() {
+    var box = $("dirPickedList");
+    if (!box) return;
+    box.innerHTML = "";
+    if (!dirBatches.length) {
+      box.textContent = "尚未添加文件夹：点上方按钮选择，或把多个文件夹拖进虚线框。可反复添加，最后一次性开始处理。";
+      return;
+    }
+    var head = document.createElement("div");
+    head.innerHTML = "<b>已添加 " + dirBatches.length + " 个文件夹</b>，共 " + allDirFiles().length +
+      " 张图片（点一次「开始处理」全部上传）";
+    box.appendChild(head);
+    dirBatches.forEach(function (b) {
+      var row = document.createElement("div");
+      row.className = "picked-row";
+      var span = document.createElement("span");
+      span.textContent = (b.id + ". " + b.label + " — " + b.files.length + " 张");
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn-mini";
+      btn.textContent = "移除";
+      btn.setAttribute("data-remove-dir", String(b.id));
+      row.appendChild(span);
+      row.appendChild(btn);
+      box.appendChild(row);
+    });
+  }
+
+  // 递归读取拖入的目录（Chrome / Edge 的 webkitGetAsEntry）。
+  // 给每个真实 File 覆写只读的 webkitRelativePath，沿用现有分组逻辑。
+  function readDirEntry(entry, path) {
+    return new Promise(function (resolve) {
+      if (!entry) return resolve([]);
+      if (entry.isFile) {
+        entry.file(function (f) {
+          try {
+            Object.defineProperty(f, "webkitRelativePath", {
+              value: path + "/" + f.name, configurable: true
+            });
+          } catch (e) { /* ignore */ }
+          resolve([f]);
+        }, function () { resolve([]); });
+        return;
+      }
+      if (!entry.isDirectory || !entry.createReader) return resolve([]);
+      var reader = entry.createReader(), out = [];
+      function readBatch() {
+        reader.readEntries(function (entries) {
+          if (!entries || !entries.length) return resolve(out);
+          Promise.all(Array.prototype.map.call(entries, function (e) {
+            return readDirEntry(e, path + "/" + e.name);
+          })).then(function (lists) {
+            lists.forEach(function (l) { out = out.concat(l); });
+            readBatch();
+          });
+        }, function () { resolve(out); });
+      }
+      readBatch();
+    });
+  }
+
+  function onDirDrop(e) {
+    if (MODE !== "folder") return;   // PDF 模式不接管页面拖放
+    e.preventDefault();
+    e.stopPropagation();
+    var drop = $("dirDrop");
+    if (drop) drop.classList.remove("over");
+    var dt = e.dataTransfer;
+    if (!dt || !dt.items || !dt.items.length) {
+      log("⚠️ 拖进来的内容读不到。请拖「文件夹」本身（不是文件夹里的图片）；若用的是 360 / QQ / 搜狗等浏览器，请改用 Chrome / Edge，或点上方按钮逐个添加。", "err");
+      return;
+    }
+    var entries = [];
+    for (var i = 0; i < dt.items.length; i++) {
+      var it = dt.items[i];
+      var getter = it.webkitGetAsEntry || it.getAsEntry;
+      var en = getter ? getter.call(it) : null;
+      if (en) entries.push(en);
+    }
+    if (!entries.length) {
+      log("⚠️ 当前浏览器不支持拖入文件夹，或拖进来的不是文件夹；请点上方按钮逐个添加。", "err");
+      return;
+    }
+    // 拖进来的是「文件」而不是「文件夹」——这是标题只剩 001/002 编号的根因，提前拦。
+    var looseFiles = entries.filter(function (en) { return en.isFile; }).length;
+    if (looseFiles === entries.length) {
+      log("⛔ 你拖进来的是 " + looseFiles + " 个【图片文件】，不是【文件夹】。", "err");
+      log("👉 请到资源管理器，进入 images_chart 的【上一层】，按住 Ctrl 选中里面的【文件夹】（如 001-xxx、002-xxx 那些目录），再拖进来；或点上方按钮逐个选择文件夹。", "err");
+      return;
+    }
+    if (looseFiles) {
+      log("⚠️ 已忽略拖进来的 " + looseFiles + " 个散图文件；只读取文件夹。请用 Ctrl 选文件夹本身。", "err");
+      entries = entries.filter(function (en) { return !en.isFile && en.isDirectory; });
+      if (!entries.length) return;
+    }
+    log("正在读取拖入的 " + entries.length + " 个文件夹…");
+    Promise.all(entries.map(function (en) { return readDirEntry(en, en.name); }))
+      .then(function (lists) {
+        var added = 0;
+        lists.forEach(function (files, i) {
+          if (files.length && addDirBatch(files, entries[i].name, true)) added++;
+        });
+        renderPickedList(); renderDirPreview();
+        log("拖入完成：新增 " + added + " 个文件夹；当前共 " + dirBatches.length +
+          " 个文件夹、" + allDirFiles().length + " 张图片。", "ok");
+      }).catch(function (err) {
+        log("❌ 读取拖入文件夹失败：" + err.message, "err");
+      });
+  }
+
+  function renderDirPreview() {
+    var box = $("dirPreview");
+    if (!box) return;
+    box.innerHTML = "";
+    var fl = allDirFiles();
+    if (!fl || !fl.length) {
+      box.textContent = "尚未添加文件夹。点上方按钮添加（可多次），或把多个文件夹拖进虚线框；确认分组后点一次「开始处理」。";
+      return;
+    }
+    var g = groupFolderFiles(fl), total = 0;
+    g.order.forEach(function (k) { total += g.groups[k].length; });
+    var head = document.createElement("div");
+    head.innerHTML = "<b>分组预览</b>：共 " + g.order.length + " 篇文章、" + total + " 张图片" +
+      (g.skipped ? "，已跳过 " + g.skipped + " 个非图片文件" : "") +
+      (g.hasSub ? "（按子文件夹分组）" : "（所选文件夹内直接是图片，整体 1 篇）") +
+      "<br><span style='color:var(--mu)'>文件夹名里的批次编号（如 <code>001-</code> / <code>-001</code>）在生成标题与 slug 时会自动去掉；下面「发布标题」就是最终效果。</span>";
+    box.appendChild(head);
+    if (g.badKeys.length) {
+      var bad = document.createElement("div");
+      bad.className = "err";
+      bad.textContent = "⛔ " + g.badKeys.length + " 个分组名看起来是图片文件名（如 " + g.badKeys[0] +
+        "），说明你拖进来的是「散图」而不是「文件夹」。这样标题会只剩数字编号（001、002…）。" +
+        "请点下方「清空」后，改拖文件夹本身，或点上方按钮逐个选择文件夹。";
+      box.appendChild(bad);
+    }
+    // 去掉编号后如果有多篇重名，slug 会自动加 -2 后缀，提前提醒用户核对是否重复采集
+    var pubSeen = {}, pubDup = 0;
+    g.order.forEach(function (k) {
+      var p = publishNameOf(k);
+      if (pubSeen[p]) pubDup++; else pubSeen[p] = 1;
+    });
+    if (pubDup) {
+      var warn = document.createElement("div");
+      warn.className = "err";
+      warn.textContent = "⚠️ 有 " + pubDup + " 个文件夹去掉编号后标题重复，它们的 slug 会自动加 -2 后缀；请确认不是把同一篇重复选进来了。";
+      box.appendChild(warn);
+    }
+    var list = document.createElement("div");
+    list.style.marginTop = "6px";
+    g.order.slice(0, 20).forEach(function (k) {
+      var d = document.createElement("div");
+      var pub = publishNameOf(k);
+      d.textContent = "• " + k + " → " + g.groups[k].length + " 张" +
+        (pub !== k ? " ｜ 发布标题：" + cleanTitle(pub) : "");   // 用 textContent，文件夹名可能含 HTML
+      list.appendChild(d);
+    });
+    if (g.order.length > 20) {
+      var more = document.createElement("div");
+      more.textContent = "… 另有 " + (g.order.length - 20) + " 篇";
+      list.appendChild(more);
+    }
+    box.appendChild(list);
+  }
+
+  // 顺序上传一个文件夹里的所有原图；返回 { urls, failures }
+  function processFolder(key, files, slug, onStatus) {
+    lastTruncated = false;
+    var results = [], failures = [];
+    var used = 0, skippedBig = 0, skippedCap = 0;
+    var base = safeName(slug);
+    var chain = Promise.resolve();
+    files.forEach(function (f) {
+      chain = chain.then(function () {
+        var stop = shouldStopUploads();
+        if (stop) {
+          if (!lastTruncated) {
+            lastTruncated = true;
+            onStatus && onStatus("⏸ " + (stop === "hard" ? "已达 1000 张/小时硬上限" : "已达自动暂停阈值") +
+              "，本文件夹剩余图片不再上传");
+          }
+          return;
+        }
+        if (f.size > MAX_IMAGE_BYTES) { skippedBig++; return; }
+        if (used >= MAX_IMAGES_PER_FOLDER) { skippedCap++; return; }
+        used++;
+        var ext = (f.name.match(/\.([a-z0-9]+)$/i) || [null, "webp"])[1].toLowerCase();
+        var name = base + "-" + ("000" + used).slice(-3) + "." + ext;
+        onStatus && onStatus("直传 " + f.name + "（" + (f.size / 1024).toFixed(0) + " KB，原图不切片）…");
+        return uploadBlob(f, name).then(function (url) {
+          var n = recordUpload();
+          results.push(url);
+          onStatus && onStatus("已上传 " + name + "（本篇 " + results.length +
+            " 张 ｜ 本小时累计 " + n + "/1000）");
+        }).catch(function (e) {
+          failures.push(f.name + "：" + e.message);
+          onStatus && onStatus("✗ " + f.name + " 上传失败：" + e.message);
+        });
+      });
+    });
+    return chain.then(function () {
+      if (skippedBig) onStatus && onStatus("跳过 " + skippedBig + " 张超过 20MB 的图片");
+      if (skippedCap) onStatus && onStatus("跳过 " + skippedCap + " 张（单篇上限 " + MAX_IMAGES_PER_FOLDER + " 张）");
+      return { urls: results, failures: failures };
+    });
+  }
+
+  function splitList(s) {
+    return s ? s.split(/[,，]/).map(function (x) { return x.trim(); }).filter(Boolean) : [];
+  }
+
+  /* Keep full publish-time precision even for drafts: drafts.html overwrites
+     this with the actual publish moment, but this is the fallback when a draft
+     is published straight from Decap. Asia/Shanghai matches hugo.toml. */
+  function localStamp(d) {
+    var t = new Date(d.getTime() + 8 * 3600 * 1000);   // UTC+8
+    function p(n) { return ("0" + n).slice(-2); }
+    return t.getUTCFullYear() + "-" + p(t.getUTCMonth() + 1) + "-" + p(t.getUTCDate()) +
+      "T" + p(t.getUTCHours()) + ":" + p(t.getUTCMinutes()) + ":" + p(t.getUTCSeconds()) + "+08:00";
+  }
+
+  function buildMd(a) {
+    var fm = [];
+    fm.push('title: "' + escapeFm(a.title) + '"');
+    fm.push("date: " + localStamp(new Date()));
+    if (a.cats.length) fm.push("categories: [" + a.cats.map(function (c) { return '"' + escapeFm(c) + '"'; }).join(", ") + "]");
+    if (a.tags.length) fm.push("tags: [" + a.tags.map(function (t) { return '"' + escapeFm(t) + '"'; }).join(", ") + "]");
+    if (a.cover) fm.push("cover: " + a.cover);
+    if (a.images.length) fm.push("pinImage: [" + a.images.map(function (u) { return '"' + u + '"'; }).join(", ") + "]");
+    fm.push("slug: " + a.slug);
+    fm.push("draft: true");
+    return "---\n" + fm.join("\n") + "\n---\n";
+  }
+
+  function renderPreview() {
+    var box = $("preview");
+    box.innerHTML = "";
+    if (!ARTICLES.length) { box.innerHTML = '<div class="pv">还没有处理出任何文章。</div>'; return; }
+    ARTICLES.forEach(function (a, i) {
+      var d = document.createElement("div");
+      d.className = "pv";
+      d.innerHTML = "<b>" + (i + 1) + ". " + escapeHtml(a.title) + "</b> ｜ slug: " + a.slug +
+        " ｜ 图片:" + a.images.length +
+        (a.incomplete ? ' ｜ <span class="err">不完整（配额暂停 / 有图片上传失败），提交时跳过</span>'
+          : (a.error ? ' ｜ <span class="err">' + escapeHtml(a.error) + "</span>" : ' ｜ <span class="ok">就绪</span>'));
+      box.appendChild(d);
+    });
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; });
+  }
+
+  // ---- 可控处理队列（支持开始 / 暂停 / 继续）----
+  var queue = [];        // 待处理 file 列表
+  var usedSlugs = {};    // slug 去重
+  var catsNow = [], tagsNow = [];
+  var processing = false; // 是否有批次在进行（含暂停）
+  var paused = false;
+  var totalFiles = 0;
+
+  function setProcUI(state) {
+    // state: 'idle' | 'running' | 'paused'
+    if (state === "idle") {
+      $("procBtn").disabled = false; $("pauseBtn").disabled = true; $("resumeBtn").disabled = true;
+    } else if (state === "running") {
+      $("procBtn").disabled = true; $("pauseBtn").disabled = false; $("resumeBtn").disabled = true;
+    } else if (state === "paused") {
+      $("procBtn").disabled = true; $("pauseBtn").disabled = true; $("resumeBtn").disabled = false;
+    }
+  }
+
+  function runNext() {
+    if (paused) {
+      setProcUI("paused");
+      renderPreview();   // 自动暂停时也要显示已处理项（含「不完整」标记），别让预览停在空状态
+      log(autoPaused
+        ? "⏸ 已因图床配额自动暂停。等本小时窗口满 1 小时自动归零（或确认配额刷新后「重置计数」），再点「继续」。"
+        : "⏸ 已暂停（当前项处理完毕后停止）。点「继续」从下一项恢复。", "ok");
+      return;
+    }
+    if (!queue.length) {
+      processing = false;
+      setProcUI("idle");
+      var ok = ARTICLES.filter(function (a) { return a.images.length && !a.incomplete; }).length;
+      renderPreview();
+      if (ok) { $("commitBtn").disabled = false; log("✅ 全部处理完：可提交 " + ok + " 篇，跳过 " + (ARTICLES.length - ok) + " 篇。确认无误点「生成草稿并提交」。", "ok"); }
+      else { log("没有可提交的草稿，无法提交。", "err"); }
+      return;
+    }
+    var task = queue.shift();
+
+    if (task.kind === "folder") {
+      var key = task.key;
+      var pubName = publishNameOf(key);        // 去掉 001- / -001 批次编号后再生成标题与 slug
+      var b = {
+        title: cleanTitle(pubName), slug: slugify(pubName, usedSlugs, true),
+        cats: catsNow, tags: tagsNow, images: [], cover: "", error: "", incomplete: false
+      };
+      log("▶ [" + (ARTICLES.length + 1) + "/" + totalFiles + "] 开始处理文件夹：" + key +
+        "（" + task.files.length + " 张图）→ 标题「" + b.title + "」" +
+        (pubName !== key ? "（已自动去掉批次编号）" : ""));
+      processFolder(key, task.files, b.slug, function (msg) { log("   " + msg); })
+        .then(function (res) {
+          b.images = res.urls; b.cover = res.urls[0] || "";
+          b.incomplete = lastTruncated || res.failures.length > 0 || !res.urls.length;
+          ARTICLES.push(b);
+          if (b.incomplete) {
+            log("⚠️ 文件夹「" + key + "」只成功上传 " + res.urls.length + "/" + task.files.length +
+              " 张，图片不完整，提交时自动跳过；窗口归零或网络恢复后请重新选文件夹处理。" +
+              (res.failures.length ? " 失败：" + res.failures.slice(0, 3).join("；") : ""), "err");
+            if (!autoPaused && lastTruncated) triggerAutoPause(quotaCount());
+          } else {
+            log("✓ 文件夹「" + key + "」完成，共 " + res.urls.length + " 张图（原图直传，未切片）。", "ok");
+          }
+        }).catch(function (e) {
+          b.error = e.message; b.incomplete = true; ARTICLES.push(b);
+          log("❌ 文件夹「" + key + "」处理失败：" + e.message, "err");
+        }).then(function () { runNext(); });
+      return;
+    }
+
+    var file = task.file;
+    if (!/\.pdf$/i.test(file.name) && file.type !== "application/pdf") {
+      log("⚠️ 跳过非 PDF 文件：" + file.name, "err");
+      return runNext();
+    }
+    var a = {
+      file: file, title: cleanTitle(file.name), slug: slugify(file.name, usedSlugs),
+      cats: catsNow, tags: tagsNow, images: [], cover: "", error: "", incomplete: false
+    };
+    log("▶ [" + (ARTICLES.length + 1) + "/" + totalFiles + "] 开始处理：" + file.name + " → 标题「" + a.title + "」");
+    processPdf(file, function (msg) { log("   " + msg); }).then(function (urls) {
+      a.images = urls; a.cover = urls[0] || "";
+      a.incomplete = lastTruncated;
+      ARTICLES.push(a);
+      if (lastTruncated) {
+        log("⚠️ " + file.name + " 因配额暂停只传了 " + urls.length +
+          " 张，图片不完整，提交时会自动跳过；窗口归零后请重新选这个文件处理。", "err");
+        if (!autoPaused) triggerAutoPause(quotaCount());
+      } else {
+        log("✓ " + file.name + " 完成，共 " + urls.length + " 张图。", "ok");
+      }
+    }).catch(function (e) {
+      a.error = e.message; ARTICLES.push(a);
+      log("❌ " + file.name + " 处理失败：" + e.message, "err");
+    }).then(function () { runNext(); });
+  }
+
+  function currentMode() {
+    var r = document.querySelector('input[name="srcMode"]:checked');
+    return r ? r.value : "pdf";
+  }
+
+  // 切换来源时清空已选文件与已处理结果，避免 PDF / 文件夹两种草稿混在一批里提交
+  function switchMode() {
+    MODE = currentMode();
+    var isPdf = MODE === "pdf";
+    $("pdfPane").hidden = !isPdf;
+    $("dirPane").hidden = isPdf;
+    $("files").value = ""; resetDirBatches();
+    ARTICLES = []; queue = []; usedSlugs = {};
+    processing = false; paused = false;
+    autoPaused = false; quotaOverride = false; lastTruncated = false;
+    $("preview").innerHTML = ""; $("status").innerHTML = "";
+    $("commitBtn").disabled = true;
+    setProcUI("idle");
+    updateQuotaUI();
+    log(isPdf ? "已切换到 PDF 模式：逐页裁剪后上传。" : "已切换到文件夹模式：webp 等原图直传，不切片。", "ok");
+  }
+
+  function startProcessing() {
+    if (processing) { log("⚠️ 已有批次在进行，请先暂停或清空。", "err"); return; }
+    MODE = currentMode();
+    var tasks = [], unit;
+    if (MODE === "pdf") {
+      var files = $("files").files;
+      if (!files || !files.length) { log("❌ 请先选择至少一个 PDF。", "err"); return; }
+      Array.prototype.forEach.call(files, function (f) { tasks.push({ kind: "pdf", file: f }); });
+      unit = "个 PDF";
+    } else {
+      var fl = allDirFiles();
+      if (!fl.length) { log("❌ 请先添加至少一个图片文件夹（可反复添加，或一次拖入多个）。", "err"); return; }
+      var g = groupFolderFiles(fl);
+      if (!g.order.length) { log("❌ 所选文件夹里没有可用图片（只支持 webp / jpg / png / gif / avif）。", "err"); return; }
+      if (g.badKeys.length) {
+        log("⛔ 已阻止开始：有 " + g.badKeys.length + " 个分组名是图片文件名（如 " + g.badKeys[0] +
+          "），说明拖进来的是「散图」而非「文件夹」，直接处理会让标题只剩数字编号。", "err");
+        log("👉 请点「清空」，然后：拖Windows 资源管理器里的【文件夹本身】到本页；或点上方按钮逐个选择文件夹。", "err");
+        return;
+      }
+      g.order.forEach(function (k) { tasks.push({ kind: "folder", key: k, files: g.groups[k] }); });
+      unit = "篇草稿";
+      log("批量分组结果：已添加 " + dirBatches.length + " 个文件夹 → " + g.order.length + " 篇（" +
+        (g.hasSub ? "按子文件夹拆分" : "所选文件夹整体 1 篇") + "）" +
+        (g.skipped ? "，已跳过 " + g.skipped + " 个非图片文件" : "") +
+        "。文件夹名里的批次编号（001- / -001）会自动去掉，标题与 slug 不含编号。", "ok");
+    }
+    var q0 = quotaCount();
+    if (q0 >= softLimit()) {
+      log("⛔ 本小时已累计上传 " + q0 + " 张，已达自动暂停阈值 " + softLimit() +
+        " 张，本批次不会开始。请等本小时窗口满 1 小时自动归零（约 " + quotaWindowMins() +
+        " 分钟）；若确认图床配额已刷新，点「重置计数」后再开始。", "err");
+      updateQuotaUI();
+      return;
+    }
+    catsNow = splitList($("cats").value);
+    tagsNow = splitList($("tags").value);
+    ARTICLES = []; usedSlugs = {}; queue = tasks;
+    totalFiles = queue.length;
+    processing = true; paused = false;
+    autoPaused = false; quotaOverride = false; lastTruncated = false;
+    $("commitBtn").disabled = true;
+    setProcUI("running");
+    log("开始处理 " + totalFiles + " " + unit + "（可随时「暂停」）。" +
+      (MODE === "folder" ? "图片原图直传、不切片。" : "每本 ≤ 100MB、≤ 100 页。"));
+    log("   图床配额：本小时已累计 " + q0 + "/1000 张（同一小时内多次批量会累加），自动暂停阈值 " +
+      softLimit() + " 张；满 1 小时自动从 0 重新计数。", "ok");
+    updateQuotaUI();
+    runNext();
+  }
+
+  function pauseProcessing() {
+    if (!processing || paused) return;
+    paused = true;
+    log("⏸ 正在暂停…（当前本处理完后停止）", "ok");
+    setProcUI("paused");
+  }
+
+  function resumeProcessing() {
+    if (!processing || !paused) return;
+    var n = quotaCount(), lim = softLimit();
+    if (n >= QUOTA_HARD) {
+      log("⛔ 本小时累计已达 1000 张硬上限。请等窗口满 1 小时自动归零（约 " +
+        quotaWindowMins() + " 分钟）；若确认图床配额已刷新，可点「重置计数」后继续。", "err");
+      updateQuotaUI();
+      return;
+    }
+    if (n < lim) quotaOverride = false;   // 窗口已归零 / 计数回落，恢复自动保护
+    if (n >= lim && !quotaOverride) {
+      if (!window.confirm("本小时已累计上传 " + n + " 张，仍接近 1000 张上限。\n" +
+        "继续上传可能触发图床限流，导致该项上传失败。\n\n仍要继续吗？")) return;
+      quotaOverride = true;
+      log("⚠️ 已选择忽略自动暂停阈值继续上传；到 1000 张仍会强制停止。", "err");
+    }
+    autoPaused = false; paused = false;
+    setProcUI("running");
+    log("▶ 继续处理剩余 " + queue.length + " 本…", "ok");
+    updateQuotaUI();
+    runNext();
+  }
+
+  // ---- GitHub Git Tree API 一次性提交所有草稿 ----
+  function gh(path, opts) {
+    opts = opts || {};
+    var headers = { "Authorization": "token " + TOKEN, "Accept": "application/vnd.github+json" };
+    if (opts.body) headers["Content-Type"] = "application/json";
+    return fetch(API + path, { method: opts.method || "GET", headers: headers, body: opts.body })
+      .then(function (r) {
+        return r.text().then(function (txt) {
+          if (!r.ok) throw new Error(path + " → " + r.status + " " + txt.slice(0, 200));
+          try { return JSON.parse(txt); } catch (e) { return txt; }
+        });
+      });
+  }
+
+  function commitDrafts() {
+    TOKEN = detectToken();
+    if (!TOKEN) { log("❌ 未找到 GitHub Token：请先登录 Decap 后台，或手动粘贴 Token。", "err"); return; }
+    var truncated = ARTICLES.filter(function (a) { return a.incomplete; });
+    var ready = ARTICLES.filter(function (a) { return a.images.length && !a.incomplete; });
+    if (!ready.length) { log("❌ 没有可提交的草稿。", "err"); return; }
+    if (truncated.length) {
+      log("⚠️ 已跳过 " + truncated.length +
+        " 篇不完整的草稿（配额暂停或有图片上传失败，避免发出缺图文章）；窗口归零或网络恢复后请重新处理这些来源。", "err");
+    }
+
+    $("commitBtn").disabled = true;
+    log("开始：准备生成 " + ready.length + " 篇草稿…");
+
+    ready.forEach(function (a, i) { a.filename = a.slug; a.md = buildMd(a); });
+
+    gh("/repos/" + REPO + "/git/refs/heads/" + BRANCH)
+      .then(function (ref) {
+        var commitSha = ref.object.sha;
+        log("✓ 当前分支 HEAD: " + commitSha.slice(0, 8));
+        return gh("/repos/" + REPO + "/git/commits/" + commitSha).then(function (commit) {
+          return { commitSha: commitSha, baseTree: commit.tree.sha };
+        });
+      })
+      .then(function (ctx) {
+        log("正在上传 " + ready.length + " 个文件内容…");
+        return Promise.all(ready.map(function (a) {
+          return gh("/repos/" + REPO + "/git/blobs", {
+            method: "POST",
+            body: JSON.stringify({ content: b64(a.md), encoding: "base64" })
+          }).then(function (b) { return { path: "content/patterns/" + a.filename + ".md", sha: b.sha }; });
+        })).then(function (blobs) { return { ctx: ctx, blobs: blobs }; });
+      })
+      .then(function (data) {
+        log("正在创建新树（tree）…");
+        return gh("/repos/" + REPO + "/git/trees", {
+          method: "POST",
+          body: JSON.stringify({
+            base_tree: data.ctx.baseTree,
+            tree: data.blobs.map(function (b) { return { path: b.path, mode: "100644", type: "blob", sha: b.sha }; })
+          })
+        }).then(function (tree) { return { ctx: data.ctx, treeSha: tree.sha }; });
+      })
+      .then(function (data) {
+        log("正在创建提交（一次提交包含全部草稿）…");
+        return gh("/repos/" + REPO + "/git/commits", {
+          method: "POST",
+          body: JSON.stringify({
+            message: "batch " + (MODE === "folder" ? "folder images" : "PDF") +
+              " drafts " + ready.length + " patterns via /anan/upload.html",
+            tree: data.treeSha,
+            parents: [data.ctx.commitSha]
+          })
+        }).then(function (commit) { return commit.sha; });
+      })
+      .then(function (newSha) {
+        log("正在更新分支引用 → " + newSha.slice(0, 8) + " …");
+        return gh("/repos/" + REPO + "/git/refs/heads/" + BRANCH, {
+          method: "PATCH",
+          body: JSON.stringify({ sha: newSha, force: false })
+        });
+      })
+      .then(function () {
+        log("✅ 已提交 " + ready.length + " 篇草稿（draft: true），GitHub Actions 会自动构建。它们现在在 Decap 后台「钩针图解」里显示为草稿。", "ok");
+        ready.forEach(function (a) {
+          log("   • 「" + a.title + "」 → 草稿链接：/anan/#/collections/patterns/" + encodeURIComponent(a.slug) +
+            " ｜ 发布后地址：/patterns/" + encodeURIComponent(a.slug) + "/", "ok");
+        });
+        log("👉 下一步：打开草稿管理页 /anan/drafts.html → 点「加载草稿列表」→ 逐篇点「发布」或「全部发布」。发布后 GitHub Actions 自动部署，通常 1–3 分钟上线。", "ok");
+        log("（不建议在 Decap 里手动取消「草稿」勾选：Decap 后台可能显示「已发布」但文件里 draft 仍为 true，前端不收录。）");
+      })
+      .catch(function (err) {
+        log("❌ 提交失败：" + err.message, "err");
+        log("提示：若 401，说明读不到有效 token，请在本页手动粘贴 GitHub Token（需 repo 权限）。", "err");
+      })
+      .then(function () { $("commitBtn").disabled = false; });
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="srcMode"]'), function (r) {
+    r.addEventListener("change", switchMode);
+  });
+  $("dirFiles").addEventListener("change", function () {
+    var fl = this.files;
+    addDirBatch(fl);
+    this.value = "";   // 清空，允许再次选择同一个文件夹
+  });
+  $("dirClearBtn").addEventListener("click", function () {
+    resetDirBatches();
+    log("已清空所有已添加的文件夹（不影响本小时上传计数）。", "ok");
+  });
+  $("dirPickedList").addEventListener("click", function (e) {
+    var btn = e.target.closest ? e.target.closest("[data-remove-dir]") : null;
+    if (!btn) return;
+    var id = Number(btn.getAttribute("data-remove-dir"));
+    var b = dirBatches.filter(function (x) { return x.id === id; })[0];
+    dirBatches = dirBatches.filter(function (x) { return x.id !== id; });
+    renderPickedList(); renderDirPreview();
+    log("已移除文件夹「" + (b ? b.label : id) + "」；当前共 " + dirBatches.length +
+      " 个文件夹、" + allDirFiles().length + " 张图片。", "ok");
+  });
+  var dropZone = $("dirDrop");
+  // 拖放监听放在整个 document：拖到页面任何位置都能接住，不再要求精确拖进虚线框。
+  document.addEventListener("dragover", function (e) {
+    if (MODE !== "folder") return;
+    var hasFiles = e.dataTransfer && Array.prototype.some.call(e.dataTransfer.types || [],
+      function (t) { return t === "Files"; });
+    if (!hasFiles) return;
+    e.preventDefault();
+    if (dropZone) dropZone.classList.add("over");
+  });
+  document.addEventListener("dragleave", function (e) {
+    if (!e.relatedTarget && dropZone) dropZone.classList.remove("over");
+  });
+  document.addEventListener("drop", onDirDrop);
+  $("procBtn").addEventListener("click", startProcessing);
+  $("pauseBtn").addEventListener("click", pauseProcessing);
+  $("resumeBtn").addEventListener("click", resumeProcessing);
+  $("commitBtn").addEventListener("click", commitDrafts);
+  $("clearBtn").addEventListener("click", function () {
+    $("files").value = ""; resetDirBatches(); $("preview").innerHTML = ""; ARTICLES = [];
+    queue = []; processing = false; paused = false; usedSlugs = {};
+    autoPaused = false; quotaOverride = false; lastTruncated = false;
+    setProcUI("idle"); $("status").innerHTML = "";
+    updateQuotaUI();   // 计数按小时累计，不清空；重新显示当前窗口进度
+  });
+  $("quotaLimit").addEventListener("change", function () {
+    var v = softLimit();
+    $("quotaLimit").value = v;
+    try { localStorage.setItem(QUOTA_LIMIT_KEY, String(v)); } catch (e) { /* ignore */ }
+    updateQuotaUI();
+    log("自动暂停阈值已设为 " + v + " 张（本小时累计达到即暂停）。", "ok");
+  });
+  $("resetQuotaBtn").addEventListener("click", function () {
+    if (!window.confirm("确定把本小时计数归零吗？\n\n" +
+      "只清空本浏览器记录的张数，不会改变图床套餐实际配额。\n" +
+      "请仅在确认已满 1 小时、或图床配额已刷新时使用。")) return;
+    resetQuota();
+  });
+  $("applyQuotaBtn").addEventListener("click", applyQuotaAdjust);
+
+  function initPage() {
+    if (detectToken()) log("✓ 已检测到 Decap 登录态的 GitHub Token，可直接提交。", "ok");
+    else log("未检测到登录态，请先登录 Decap 后台，或手动粘贴 GitHub Token。");
+    try {
+      var saved = parseInt(localStorage.getItem(QUOTA_LIMIT_KEY) || "", 10);
+      if (isFinite(saved) && saved > 0) $("quotaLimit").value = Math.min(saved, QUOTA_HARD);
+    } catch (e) { /* ignore */ }
+    renderPickedList();
+    renderDirPreview();
+    updateQuotaUI();
+    setInterval(updateQuotaUI, 30000);   // 窗口满 1 小时后自动归零并刷新显示
+  }
+  if (document.readyState === "loading") window.addEventListener("DOMContentLoaded", initPage);
+  else initPage();
+})();
+</script>
+</body>
+</html>
