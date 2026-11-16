@@ -55,7 +55,7 @@
 <body>
 <div class="wrap">
   <h1>批量发布图解</h1>
-  <p class="sub">两种来源：<strong>PDF 文件</strong>（逐页裁剪上传）或 <strong>图片文件夹</strong>（webp 等原图直传、不切片）。每个 PDF / 每个文件夹生成一篇<strong>草稿</strong>。提交后请到 <a href="drafts.html?v=20261116d">草稿管理页 <code>/anan/drafts.html</code></a> 点「发布」或「全部发布」即可上线（<strong>推荐</strong>，直接改文件更可靠）。也可在 Decap 后台取消「草稿（不发布）」勾选，但后台的「已发布」状态可能显示不准。</p>
+  <p class="sub">两种来源：<strong>PDF 文件</strong>（逐页裁剪上传）或 <strong>图片文件夹</strong>（webp 等原图直传、不切片）。每个 PDF / 每个文件夹生成一篇<strong>草稿</strong>。提交后请到 <a href="drafts.html?v=20261116e">草稿管理页 <code>/anan/drafts.html</code></a> 点「发布」或「全部发布」即可上线（<strong>推荐</strong>，直接改文件更可靠）。也可在 Decap 后台取消「草稿（不发布）」勾选，但后台的「已发布」状态可能显示不准。</p>
 
   <label for="token">GitHub Token（自动读取 Decap 登录态，失败再手动粘贴）</label>
   <input type="password" id="token" placeholder="ghp_xxx 或 github_pat_xxx（留空则尝试复用 Decap 登录态）" autocomplete="off" />
@@ -516,7 +516,10 @@
         return naturalCompare(a.webkitRelativePath || a.name, b.webkitRelativePath || b.name);
       });
     });
-    return { groups: groups, order: order, skipped: skipped, hasSub: hasSub };
+    // 防呆：分组名如果长得像图片文件名（001.jpg / 2.webp），说明拖进来的是「散图」
+    // 而不是「文件夹」——目录层级丢了，会导致标题只剩编号。提前标出来拦截。
+    var badKeys = order.filter(function (k) { return /\.(webp|jpe?g|png|gif|avif)$/i.test(k); });
+    return { groups: groups, order: order, skipped: skipped, hasSub: hasSub, badKeys: badKeys };
   }
 
   function allDirFiles() {
@@ -638,6 +641,18 @@
       log("⚠️ 当前浏览器不支持拖入文件夹，或拖进来的不是文件夹；请点上方按钮逐个添加。", "err");
       return;
     }
+    // 拖进来的是「文件」而不是「文件夹」——这是标题只剩 001/002 编号的根因，提前拦。
+    var looseFiles = entries.filter(function (en) { return en.isFile; }).length;
+    if (looseFiles === entries.length) {
+      log("⛔ 你拖进来的是 " + looseFiles + " 个【图片文件】，不是【文件夹】。", "err");
+      log("👉 请到资源管理器，进入 images_chart 的【上一层】，按住 Ctrl 选中里面的【文件夹】（如 001-xxx、002-xxx 那些目录），再拖进来；或点上方按钮逐个选择文件夹。", "err");
+      return;
+    }
+    if (looseFiles) {
+      log("⚠️ 已忽略拖进来的 " + looseFiles + " 个散图文件；只读取文件夹。请用 Ctrl 选文件夹本身。", "err");
+      entries = entries.filter(function (en) { return !en.isFile && en.isDirectory; });
+      if (!entries.length) return;
+    }
     log("正在读取拖入的 " + entries.length + " 个文件夹…");
     Promise.all(entries.map(function (en) { return readDirEntry(en, en.name); }))
       .then(function (lists) {
@@ -670,6 +685,14 @@
       (g.hasSub ? "（按子文件夹分组）" : "（所选文件夹内直接是图片，整体 1 篇）") +
       "<br><span style='color:var(--mu)'>文件夹名里的批次编号（如 <code>001-</code> / <code>-001</code>）在生成标题与 slug 时会自动去掉；下面「发布标题」就是最终效果。</span>";
     box.appendChild(head);
+    if (g.badKeys.length) {
+      var bad = document.createElement("div");
+      bad.className = "err";
+      bad.textContent = "⛔ " + g.badKeys.length + " 个分组名看起来是图片文件名（如 " + g.badKeys[0] +
+        "），说明你拖进来的是「散图」而不是「文件夹」。这样标题会只剩数字编号（001、002…）。" +
+        "请点下方「清空」后，改拖文件夹本身，或点上方按钮逐个选择文件夹。";
+      box.appendChild(bad);
+    }
     // 去掉编号后如果有多篇重名，slug 会自动加 -2 后缀，提前提醒用户核对是否重复采集
     var pubSeen = {}, pubDup = 0;
     g.order.forEach(function (k) {
@@ -918,6 +941,12 @@
       if (!fl.length) { log("❌ 请先添加至少一个图片文件夹（可反复添加，或一次拖入多个）。", "err"); return; }
       var g = groupFolderFiles(fl);
       if (!g.order.length) { log("❌ 所选文件夹里没有可用图片（只支持 webp / jpg / png / gif / avif）。", "err"); return; }
+      if (g.badKeys.length) {
+        log("⛔ 已阻止开始：有 " + g.badKeys.length + " 个分组名是图片文件名（如 " + g.badKeys[0] +
+          "），说明拖进来的是「散图」而非「文件夹」，直接处理会让标题只剩数字编号。", "err");
+        log("👉 请点「清空」，然后：拖Windows 资源管理器里的【文件夹本身】到本页；或点上方按钮逐个选择文件夹。", "err");
+        return;
+      }
       g.order.forEach(function (k) { tasks.push({ kind: "folder", key: k, files: g.groups[k] }); });
       unit = "篇草稿";
       log("批量分组结果：已添加 " + dirBatches.length + " 个文件夹 → " + g.order.length + " 篇（" +
