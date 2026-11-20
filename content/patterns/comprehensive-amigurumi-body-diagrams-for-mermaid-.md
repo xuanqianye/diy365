@@ -1,0 +1,10 @@
+---
+title: "comprehensive amigurumi body diagrams for mermaid and duck dolls with detailed crochet stitch instructions"
+date: 2026-11-20T10:10:55+08:00
+categories: ["Amigurumi"]
+tags: ["Amigurumi", "Crochet", "DIY", "Pattern", "Handmade"]
+cover: https://pic1.imgdd.cc/i/0350cEbyHY02LVJKaY9ck6.jpg
+pinImage: ["https://pic1.imgdd.cc/i/0350cEbyHY02LVJKaY9ck6.jpg", "https://pic1.imgdd.cc/i/0350cEcrwLg5828wxIFtB1.jpg", "https://pic1.imgdd.cc/i/0350cEdo2aWiyRVoGhx79F.jpg", "https://pic1.imgdd.cc/i/0350cEeXGyOMuXvEIyhqOl.jpg", "https://pic1.imgdd.cc/i/0350cEfHBTe8RRrDNPccwH.jpg", "https://pic1.imgdd.cc/i/0350cEg1gNsjmKZYqmfDTD.jpg", "https://pic1.imgdd.cc/i/0350cEgiNWyuNTTECCbD72.jpg", "https://pic1.imgdd.cc/i/0350cEhwVXBJvMH9C89XrM.jpg", "https://pic1.imgdd.cc/i/0350cEiiBAvkyQboeh8QOS.jpg", "https://pic1.imgdd.cc/i/0350cEjWy0w0c0dDdjfpHe.jpg", "https://pic1.imgdd.cc/i/0350cEkLGUPy0g2mxGOTih.jpg", "https://pic1.imgdd.cc/i/0350cEl5NL8rbthds9wwUC.jpg", "https://pic1.imgdd.cc/i/0350cElpO0e0FyEp6V7Rpu.jpg", "https://pic1.imgdd.cc/i/0350cEmZgj8W1IGm4h93qf.jpg", "https://pic1.imgdd.cc/i/0350cEnQE8MbODN43ew8RB.jpg", "https://pic1.imgdd.cc/i/0350cEoDeNQhXgkBKZLxYR.jpg", "https://pic1.imgdd.cc/i/0350cEoyvUAv8hhtilEGM9.jpg", "https://pic1.imgdd.cc/i/0350cEpnKBcjBaHWE7UyxM.jpg", "https://pic1.imgdd.cc/i/0350cEqe44YuJ7UGBMpPVi.jpg", "https://pic1.imgdd.cc/i/0350cErUPG6L30CjJOyBsN.jpg", "https://pic1.imgdd.cc/i/0350cEsD9XA6jkDaI1bosT.jpg", "https://pic1.imgdd.cc/i/0350cEt2WPSgesIrIcAS11.jpg", "https://pic1.imgdd.cc/i/0350cEtoU7K0QJY2C8ar7E.jpg", "https://pic1.imgdd.cc/i/0350cEuevdbOWvMjWOcBKF.jpg", "https://pic1.imgdd.cc/i/0350cEvMV9Kz9acQnUpQOT.jpg", "https://pic1.imgdd.cc/i/0350cEwJy13xo3xHqhpZ2q.jpg", "https://pic1.imgdd.cc/i/0350cEx2oCoKYzX7iJEmsJ.jpg", "https://pic1.imgdd.cc/i/0350cExmQj0X6Elom4KsUl.jpg", "https://pic1.imgdd.cc/i/0350cEyVGWxVYmFokPBNCl.jpg", "https://pic1.imgdd.cc/i/0350cEzJxTGrzzHMQuItXC.jpg", "https://pic1.imgdd.cc/i/0350cF02JGNl5ys6UzJovy.jpg"]
+slug: comprehensive-amigurumi-body-diagrams-for-mermaid-
+draft: true
+---
