@@ -1,0 +1,16 @@
+{{- /*
+  Custom sitemap: exclude the 785 auto-numbered thin pages
+  (/patterns/amigurumi-<n>/, /patterns/chinese-pattern-<n>/) that Google
+  crawls but refuses to index ("Crawled - currently not indexed").
+  All other pages keep the exact Hugo default sitemap output format.
+  To re-include them, delete this file (Hugo falls back to its built-in template).
+*/ -}}
+{{ printf "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>" | safeHTML }}
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+{{- range .Site.Pages }}
+  {{- $slug := "" }}{{ with .File }}{{ $slug = .ContentBaseName }}{{ end }}
+  {{- if not (or (findRE `^amigurumi-[0-9]+$` $slug) (findRE `^chinese-pattern-[0-9]+$` $slug)) }}
+  <url><loc>{{ .Permalink }}</loc>{{ if not .Lastmod.IsZero }}<lastmod>{{ .Lastmod.Format "2006-01-02T15:04:05Z07:00" | safeHTML }}</lastmod>{{ end }}</url>
+  {{- end }}
+{{- end }}
+</urlset>
