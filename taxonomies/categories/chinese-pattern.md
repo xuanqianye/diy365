@@ -1,3 +1,3 @@
 ---
-title: Chinese Pattern
+title: Chinese
 ---
